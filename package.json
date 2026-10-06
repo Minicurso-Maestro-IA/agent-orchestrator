@@ -1,0 +1,37 @@
+{
+  "name": "agent-orchestrator",
+  "version": "1.0.0",
+  "description": "Spatial 2D Canvas workspace running terminals and AI agents",
+  "main": "./out/main/index.js",
+  "author": "Eliandro",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-webgl": "^0.18.0",
+    "@xterm/xterm": "^5.5.0",
+    "@xyflow/react": "^12.4.4",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
+    "node-pty": "^1.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^34.3.0",
+    "electron-vite": "^3.1.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0"
+  }
+}
