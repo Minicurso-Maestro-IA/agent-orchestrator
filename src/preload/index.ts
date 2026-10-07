@@ -4,7 +4,12 @@ import {
   TerminalSpawnOptions,
   TerminalInfo,
   TerminalDataEvent,
-  TerminalExitEvent
+  TerminalExitEvent,
+  SkillInfo,
+  AgentDefinition,
+  PipelineStatusEvent,
+  DocumentInfo,
+  DocumentEvent
 } from '@shared/types'
 
 const orchestratorAPI: OrchestratorAPI = {
@@ -23,6 +28,24 @@ const orchestratorAPI: OrchestratorAPI = {
   listTerminals: (): Promise<TerminalInfo[]> => {
     return ipcRenderer.invoke('terminal:list')
   },
+  listSkills: (): Promise<SkillInfo[]> => {
+    return ipcRenderer.invoke('context:skills')
+  },
+  listAgents: (): Promise<AgentDefinition[]> => {
+    return ipcRenderer.invoke('context:agents')
+  },
+  sendPrompt: (id: string, text: string): Promise<boolean> => {
+    return ipcRenderer.invoke('terminal:prompt', id, text)
+  },
+  notifyTerminal: (id: string, text: string): Promise<void> => {
+    return ipcRenderer.invoke('terminal:notify', id, text)
+  },
+  readDocument: (filePath: string): Promise<DocumentInfo | null> => {
+    return ipcRenderer.invoke('doc:read', filePath)
+  },
+  createDocument: (name: string, content: string): Promise<DocumentInfo | null> => {
+    return ipcRenderer.invoke('doc:create', name, content)
+  },
   onTerminalData: (callback: (event: TerminalDataEvent) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, data: TerminalDataEvent): void => {
       callback(data)
@@ -39,6 +62,24 @@ const orchestratorAPI: OrchestratorAPI = {
     ipcRenderer.on('terminal:exit', listener)
     return () => {
       ipcRenderer.removeListener('terminal:exit', listener)
+    }
+  },
+  onPipelineStatus: (callback: (event: PipelineStatusEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: PipelineStatusEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('pipeline:status', listener)
+    return () => {
+      ipcRenderer.removeListener('pipeline:status', listener)
+    }
+  },
+  onDocument: (callback: (event: DocumentEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: DocumentEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('doc:changed', listener)
+    return () => {
+      ipcRenderer.removeListener('doc:changed', listener)
     }
   }
 }
