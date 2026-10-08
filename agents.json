@@ -1,0 +1,46 @@
+{
+  "//": "Catálogo de CLIs de IA oferecidas no seletor. Editável sem recompilar o app.",
+  "//delivery": "'paste' abre a CLI e cola a skill como primeiro prompt (funciona com qualquer CLI interativa). 'arg' passa a skill via skillArgs, com os placeholders {skillFile} e {skillName}.",
+  "agents": [
+    {
+      "id": "claude",
+      "label": "Claude Code",
+      "command": "claude",
+      "args": [],
+      "delivery": "paste",
+      "readyDelayMs": 4000,
+      "description": "CLI agêntica da Anthropic",
+      "install": "npm i -g @anthropic-ai/claude-code"
+    },
+    {
+      "id": "gemini",
+      "label": "Gemini CLI",
+      "command": "gemini",
+      "args": [],
+      "delivery": "paste",
+      "readyDelayMs": 4000,
+      "description": "CLI do Google Gemini",
+      "install": "npm i -g @google/gemini-cli"
+    },
+    {
+      "id": "codex",
+      "label": "Codex CLI",
+      "command": "codex",
+      "args": [],
+      "delivery": "paste",
+      "readyDelayMs": 4000,
+      "description": "CLI de codificação da OpenAI",
+      "install": "npm i -g @openai/codex"
+    },
+    {
+      "id": "exemplo-custom",
+      "label": "Exemplo (custom)",
+      "command": "echo",
+      "args": ["agente-custom-iniciado"],
+      "delivery": "arg",
+      "skillArgs": ["--contexto", "{skillFile}"],
+      "description": "Modelo para plugar qualquer CLI own/local",
+      "install": ""
+    }
+  ]
+}

@@ -5,11 +5,17 @@ import {
   Controls,
   MiniMap,
   BackgroundVariant,
+  ConnectionMode,
+  ConnectionLineType,
   useReactFlow
 } from '@xyflow/react'
 import { TerminalNode } from './TerminalNode'
 import { TopBar } from './TopBar'
-import { useTerminalStore } from '../store/terminalStore'
+import { NewTerminalModal } from './NewTerminalModal'
+import { ConditionEdge } from './ConditionEdge'
+import { DocumentNode } from './DocumentNode'
+import { GroupNode } from './GroupNode'
+import { useTerminalStore, EDGE_DEFAULTS } from '../store/terminalStore'
 
 export function SpatialCanvas(): ReactElement {
   const initializedRef = useRef(false)
@@ -21,35 +27,64 @@ export function SpatialCanvas(): ReactElement {
   const onEdgesChange = useTerminalStore((s) => s.onEdgesChange)
   const onConnect = useTerminalStore((s) => s.onConnect)
   const addTerminal = useTerminalStore((s) => s.addTerminal)
+  const loadCatalog = useTerminalStore((s) => s.loadCatalog)
+  const handlePipelineStatus = useTerminalStore((s) => s.handlePipelineStatus)
+  const handleDocumentEvent = useTerminalStore((s) => s.handleDocumentEvent)
 
   const nodeTypes = useMemo(
     () => ({
-      terminal: TerminalNode
+      terminal: TerminalNode,
+      document: DocumentNode,
+      group: GroupNode
     }),
     []
   )
 
-  // Inicialização: criar automaticamente 1 terminal PowerShell de boas-vindas
+  const edgeTypes = useMemo(
+    () => ({
+      condition: ConditionEdge
+    }),
+    []
+  )
+
+  // Vereditos chegam do main; quem decide para onde encaminhar é o store,
+  // que é o lado que conhece as arestas.
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onPipelineStatus((event) => {
+      handlePipelineStatus(event)
+    })
+  }, [handlePipelineStatus])
+
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onDocument((event) => {
+      handleDocumentEvent(event)
+    })
+  }, [handleDocumentEvent])
+
+  // Inicialização: carregar catálogo de skills/agentes e criar 1 terminal de boas-vindas
   useEffect(() => {
     if (initializedRef.current) return
     initializedRef.current = true
 
+    loadCatalog()
+
     if (nodes.length === 0) {
-      addTerminal('powershell', { x: 260, y: 140 }).then(() => {
-        // Ajusta a visualização após criar o nó inicial
+      // Terminal inicial sem agente: o usuário escolhe o contexto nos próximos.
+      addTerminal({ shell: 'powershell', agentId: null, skillId: null }).then(() => {
         setTimeout(() => {
           fitView({ padding: 0.25, duration: 600 })
         }, 300)
       })
     }
-  }, [addTerminal, fitView, nodes.length])
+  }, [addTerminal, fitView, loadCatalog, nodes.length])
 
   return (
-    <div className="relative w-screen h-screen bg-[#060911] overflow-hidden select-none">
-      {/* Barra de Ferramentas Superior */}
+    <div className="relative w-screen h-screen bg-[#0b1220] overflow-hidden select-none">
       <TopBar />
+      <NewTerminalModal />
 
-      {/* Canvas Espacial 2D Infinito */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -57,6 +92,13 @@ export function SpatialCanvas(): ReactElement {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        // Loose: qualquer handle pode iniciar ou receber uma conexão, então dá
+        // para ligar os nós por cima, por baixo ou pelos lados.
+        connectionMode={ConnectionMode.Loose}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        connectionLineStyle={{ stroke: '#38bdf8', strokeWidth: 2 }}
+        defaultEdgeOptions={EDGE_DEFAULTS}
         fitView
         minZoom={0.15}
         maxZoom={2.5}
@@ -64,29 +106,26 @@ export function SpatialCanvas(): ReactElement {
         proOptions={{ hideAttribution: true }}
         className="agent-orchestrator-canvas"
       >
-        {/* Fundo Pontilhado Escuro */}
         <Background
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1.5}
-          color="#334155"
-          className="opacity-50"
+          color="#64748b"
+          className="opacity-70"
         />
 
-        {/* Controles de Zoom e Panning */}
         <Controls
           position="bottom-left"
-          className="!bg-slate-900/90 !border !border-slate-800 !rounded-xl !shadow-2xl !p-1 [&>button]:!bg-transparent [&>button]:!border-none [&>button]:!text-slate-300 hover:[&>button]:!text-white hover:[&>button]:!bg-slate-800 [&>button]:!rounded-lg transition-colors"
+          className="!bg-slate-800/95 !border !border-slate-600 !rounded-xl !shadow-2xl !p-1 [&>button]:!bg-transparent [&>button]:!border-none [&>button]:!text-slate-200 hover:[&>button]:!text-white hover:[&>button]:!bg-slate-700 [&>button]:!rounded-lg transition-colors"
         />
 
-        {/* MiniMap Espacial */}
         <MiniMap
           position="bottom-right"
           nodeColor="#38bdf8"
-          nodeStrokeColor="#0284c7"
+          nodeStrokeColor="#0ea5e9"
           nodeBorderRadius={6}
-          maskColor="rgba(9, 13, 22, 0.85)"
-          className="!bg-slate-900/90 !border !border-slate-800 !rounded-xl !shadow-2xl !overflow-hidden backdrop-blur-md"
+          maskColor="rgba(15, 23, 42, 0.75)"
+          className="!bg-slate-800/95 !border !border-slate-600 !rounded-xl !shadow-2xl !overflow-hidden"
         />
       </ReactFlow>
     </div>

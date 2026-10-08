@@ -1,22 +1,46 @@
 import { useEffect, useRef, memo, type ReactElement } from 'react'
-import {
-  Handle,
-  Position,
-  NodeProps,
-  Node,
-  NodeResizeControl,
-  NodeResizer
-} from '@xyflow/react'
+import { Handle, Position, NodeProps, Node, NodeResizeControl, NodeResizer } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { WebglAddon } from '@xterm/addon-webgl'
-import { Terminal as TerminalIcon, X } from 'lucide-react'
-import {
-  TerminalNodeData,
-  TerminalDataEvent,
-  TerminalExitEvent
-} from '@shared/types'
+import { Terminal as TerminalIcon, X, Sparkles, BookOpen } from 'lucide-react'
+import { TerminalNodeData, TerminalDataEvent, TerminalExitEvent } from '@shared/types'
 import { useTerminalStore } from '../store/terminalStore'
+
+/**
+ * Tema do terminal. Mais claro e com contraste maior que o original: o fundo
+ * antigo (#090d16) era quase igual ao do canvas e os nós sumiam.
+ */
+const TERMINAL_THEME = {
+  background: '#131c2e',
+  foreground: '#e9eef8',
+  cursor: '#38bdf8',
+  cursorAccent: '#131c2e',
+  selectionBackground: 'rgba(56, 189, 248, 0.35)',
+  black: '#1e293b',
+  red: '#fb7185',
+  green: '#4ade80',
+  yellow: '#fbbf24',
+  blue: '#60a5fa',
+  magenta: '#c084fc',
+  cyan: '#22d3ee',
+  white: '#f1f5f9',
+  brightBlack: '#64748b',
+  brightRed: '#fda4af',
+  brightGreen: '#86efac',
+  brightYellow: '#fcd34d',
+  brightBlue: '#93c5fd',
+  brightMagenta: '#d8b4fe',
+  brightCyan: '#67e8f9',
+  brightWhite: '#ffffff'
+}
+
+/** Handles nos quatro lados: com ConnectionMode.Loose cada um envia e recebe. */
+const HANDLE_SIDES = [
+  { id: 'top', position: Position.Top },
+  { id: 'right', position: Position.Right },
+  { id: 'bottom', position: Position.Bottom },
+  { id: 'left', position: Position.Left }
+] as const
 
 function TerminalNodeComponent({
   id,
@@ -36,48 +60,21 @@ function TerminalNodeComponent({
     const term = new Terminal({
       cursorBlink: true,
       cursorStyle: 'bar',
-      fontSize: 13,
-      lineHeight: 1.2,
+      fontSize: 14,
+      lineHeight: 1.25,
       fontFamily: 'Consolas, "Cascadia Code", "Fira Code", monospace',
-      allowTransparency: true,
-      theme: {
-        background: '#090d16',
-        foreground: '#e2e8f0',
-        cursor: '#38bdf8',
-        cursorAccent: '#090d16',
-        selectionBackground: 'rgba(56, 189, 248, 0.25)',
-        black: '#090d16',
-        red: '#f87171',
-        green: '#4ade80',
-        yellow: '#facc15',
-        blue: '#60a5fa',
-        magenta: '#c084fc',
-        cyan: '#38bdf8',
-        white: '#f8fafc',
-        brightBlack: '#475569',
-        brightRed: '#ef4444',
-        brightGreen: '#22c55e',
-        brightYellow: '#eab308',
-        brightBlue: '#3b82f6',
-        brightMagenta: '#a855f7',
-        brightCyan: '#06b6d4',
-        brightWhite: '#ffffff'
-      }
+      allowTransparency: false,
+      // Garante legibilidade mesmo quando um programa escolhe cores de baixo contraste.
+      minimumContrastRatio: 4.5,
+      theme: TERMINAL_THEME
     })
 
     const fitAddon = new FitAddon()
     term.loadAddon(fitAddon)
 
-    try {
-      const webglAddon = new WebglAddon()
-      webglAddon.onContextLoss(() => {
-        webglAddon.dispose()
-      })
-      term.loadAddon(webglAddon)
-    } catch {
-      // Fallback gracioso caso WebGL não esteja disponível
-    }
-
+    // Sem WebGL de propósito: o canvas tem resolução fixa e o React Flow apenas
+    // escala o raster, então o texto borrava ao dar zoom. O renderer DOM é
+    // re-rasterizado pelo navegador em cada nível de zoom e fica nítido.
     term.open(terminalContainerRef.current)
 
     xtermRef.current = term
@@ -145,75 +142,66 @@ function TerminalNodeComponent({
   }, [data.id, data.shell, setTerminalActive])
 
   const shellBadgeColors: Record<string, string> = {
-    powershell: 'bg-blue-950/80 text-blue-400 border-blue-800/60',
-    cmd: 'bg-amber-950/80 text-amber-400 border-amber-800/60',
-    wsl: 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60'
+    powershell: 'bg-blue-500/15 text-blue-300 border-blue-400/40',
+    cmd: 'bg-amber-500/15 text-amber-300 border-amber-400/40',
+    wsl: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/40'
   }
 
   return (
     <div
-      className={`relative flex flex-col w-full h-full rounded-xl bg-slate-950 border transition-shadow duration-200 shadow-xl overflow-hidden group ${
+      className={`relative flex flex-col w-full h-full rounded-xl bg-slate-900 border-2 transition-shadow duration-200 shadow-2xl overflow-hidden group ${
         selected
-          ? 'border-sky-500 shadow-sky-950/40 shadow-2xl ring-1 ring-sky-500/50'
-          : 'border-slate-800 hover:border-slate-700'
+          ? 'border-sky-400 ring-2 ring-sky-400/40'
+          : 'border-slate-600 hover:border-slate-500'
       }`}
     >
-      {/* Node Resizer para controle completo de bordas */}
       <NodeResizer
         minWidth={360}
         minHeight={220}
         isVisible={selected}
-        lineClassName="!border-sky-500/60"
-        handleClassName="!w-3 !h-3 !bg-sky-500 !border-2 !border-slate-950 !rounded"
+        lineClassName="!border-sky-400/70"
+        handleClassName="!w-3 !h-3 !bg-sky-400 !border-2 !border-slate-900 !rounded"
       />
 
-      {/* NodeResizeControl no canto inferior direito */}
       <NodeResizeControl
         minWidth={360}
         minHeight={220}
         position="bottom-right"
-        className="!bg-transparent !border-none !w-6 !h-6 !bottom-0 !right-0 flex items-center justify-center cursor-se-resize text-slate-500 hover:text-sky-400 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+        className="!bg-transparent !border-none !w-6 !h-6 !bottom-0 !right-0 flex items-center justify-center cursor-se-resize text-slate-400 hover:text-sky-300 opacity-0 group-hover:opacity-100 transition-opacity z-20"
       >
         <div className="w-2.5 h-2.5 border-r-2 border-b-2 border-current rounded-br-[2px]" />
       </NodeResizeControl>
 
-      {/* Handles para conexões espaciais */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="in"
-        title="Input Hook"
-        className="!w-3.5 !h-3.5 !bg-sky-500 hover:!bg-sky-400 !border-2 !border-slate-950 !rounded-full transition-transform hover:scale-125 shadow-lg"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="out"
-        title="Output Stream"
-        className="!w-3.5 !h-3.5 !bg-emerald-500 hover:!bg-emerald-400 !border-2 !border-slate-950 !rounded-full transition-transform hover:scale-125 shadow-lg"
-      />
+      {/* Conexões saem e entram por qualquer um dos quatro lados */}
+      {HANDLE_SIDES.map((side) => (
+        <Handle
+          key={side.id}
+          type="source"
+          position={side.position}
+          id={side.id}
+          title="Arraste para conectar"
+          className="!w-3.5 !h-3.5 !bg-sky-400 hover:!bg-sky-300 !border-2 !border-slate-900 !rounded-full transition-transform hover:scale-150 shadow-lg"
+        />
+      ))}
 
       {/* Barra de Título (Alça de Arrasto) */}
-      <div className="terminal-drag-handle flex items-center justify-between px-3 py-2 bg-slate-900/95 border-b border-slate-800/80 cursor-grab active:cursor-grabbing select-none backdrop-blur-sm">
+      <div className="terminal-drag-handle flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-600 cursor-grab active:cursor-grabbing select-none">
         <div className="flex items-center gap-2 min-w-0">
-          {/* Status Indicator */}
           <span
             className={`w-2.5 h-2.5 rounded-full transition-colors flex-shrink-0 ${
               data.active
-                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]'
-                : 'bg-slate-600'
+                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]'
+                : 'bg-slate-500'
             }`}
             title={data.active ? 'Sessão ativa' : 'Sessão encerrada'}
           />
 
-          <TerminalIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+          <TerminalIcon className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
 
-          {/* Título */}
-          <span className="text-xs font-semibold text-slate-200 truncate">
+          <span className="text-xs font-semibold text-slate-50 truncate">
             {data.title || 'Terminal'}
           </span>
 
-          {/* Shell Badge */}
           <span
             className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border leading-none font-medium flex-shrink-0 ${
               shellBadgeColors[data.shell] || shellBadgeColors.powershell
@@ -222,18 +210,37 @@ function TerminalNodeComponent({
             {data.shell}
           </span>
 
+          {data.agentLabel && (
+            <span
+              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border leading-none font-medium flex-shrink-0 bg-violet-500/15 text-violet-200 border-violet-400/40"
+              title={`Agente: ${data.agentLabel}`}
+            >
+              <Sparkles className="w-2.5 h-2.5" />
+              {data.agentLabel}
+            </span>
+          )}
+
+          {data.skillName && (
+            <span
+              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border leading-none font-medium flex-shrink-0 bg-sky-500/15 text-sky-200 border-sky-400/40 truncate max-w-[160px]"
+              title={`Skill: ${data.skillName}`}
+            >
+              <BookOpen className="w-2.5 h-2.5 flex-shrink-0" />
+              {data.skillName}
+            </span>
+          )}
+
           {data.pid && (
-            <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+            <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
               PID:{data.pid}
             </span>
           )}
         </div>
 
-        {/* Controles de Janela */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => closeTerminal(id)}
-            className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+            className="p-1 rounded text-slate-300 hover:text-red-300 hover:bg-red-500/20 transition-colors"
             title="Fechar Terminal"
           >
             <X className="w-3.5 h-3.5" />
@@ -241,10 +248,9 @@ function TerminalNodeComponent({
         </div>
       </div>
 
-      {/* Contêiner XTerm com classes nodrag e nowheel */}
       <div
         ref={terminalContainerRef}
-        className="nodrag nowheel flex-1 w-full min-h-0 bg-[#090d16] p-2 overflow-hidden cursor-text"
+        className="nodrag nowheel flex-1 w-full min-h-0 bg-[#131c2e] p-2 overflow-hidden cursor-text"
       />
     </div>
   )

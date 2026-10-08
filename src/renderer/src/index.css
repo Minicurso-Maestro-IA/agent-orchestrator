@@ -10,7 +10,7 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #060911;
+  background-color: #0b1220;
   color: #f1f5f9;
   user-select: none;
 }
@@ -23,23 +23,35 @@ body,
 
 .xterm .xterm-viewport {
   overflow-y: auto !important;
+  background-color: transparent !important;
 }
 
 .xterm .xterm-viewport::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .xterm .xterm-viewport::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #131c2e;
 }
 
 .xterm .xterm-viewport::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: #64748b;
+  border-radius: 4px;
 }
 
 .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
+}
+
+/*
+ * Renderer DOM do xterm: o navegador re-rasteriza o texto em cada nível de
+ * zoom do React Flow, então o terminal continua nítido. Evitamos qualquer
+ * promoção a camada própria, que congelaria o raster numa escala só.
+ */
+.xterm .xterm-rows {
+  will-change: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* React Flow styling overrides */
@@ -49,8 +61,20 @@ body,
 
 .react-flow__handle {
   transition: transform 0.15s ease, background-color 0.15s ease;
+  opacity: 0.75;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__node.selected .react-flow__handle {
+  opacity: 1;
 }
 
 .react-flow__node {
   cursor: default;
+}
+
+/* Setas das conexões acompanham a cor da aresta */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #7dd3fc;
+  stroke-width: 3;
 }
