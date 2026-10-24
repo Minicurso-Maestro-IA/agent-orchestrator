@@ -97,6 +97,81 @@ npm run preview
 
 ---
 
+## 📦 Empacotar para a sala de aula
+
+```bash
+npm run dist:win
+```
+
+Gera `release/orquestrador-<versão>-win-x64.zip`. O aluno descompacta e clica no
+exe: sem instalador e sem administrador.
+
+```
+orquestrador-1.0.0-win-x64.zip
+├── Agent Orchestrator.exe
+├── agents.json          ← editável pelo aluno, ao lado do exe
+├── skills/              ← editável pelo aluno, ao lado do exe
+└── resources/
+    ├── app.asar
+    └── app.asar.unpacked/node_modules/node-pty/
+```
+
+Três decisões no `electron-builder.yml` que não são cosméticas:
+
+| Config | Por quê |
+|---|---|
+| `asarUnpack` do node-pty | o ConPTY carrega uma DLL de verdade de `third_party/conpty/win10-x64/`, e DLL não é carregável de dentro do asar. Sem isso o app abre e **todo** terminal falha |
+| `extraFiles` (e não `extraResources`) | põe `agents.json` e `skills/` ao lado do exe, exatamente onde `agent-registry.ts` e `skill-registry.ts` procuram — e onde o aluno consegue editar |
+| `npmRebuild: false` | node-pty 1.1.0 é addon **Node-API** e já publica binário pronto para `win32-x64`: não há o que recompilar. Com o rebuild ligado, o `node-gyp` aborta dizendo que não cross-compila |
+
+Como não há nada para recompilar, o zip de Windows pode ser montado de um Linux.
+Só a assinatura do executável exige wine; sem certificado ela não serve para nada,
+então desligue-a nesse caso:
+
+```bash
+npx electron-builder --win --x64 -c.win.signAndEditExecutable=false
+```
+
+Essa flag também abre mão do ícone e dos metadados do exe. Buildando no Windows,
+não passe a flag.
+
+O executável não é assinado: no primeiro clique o SmartScreen avisa que o autor é
+desconhecido. "Mais informações" → "Executar assim mesmo".
+
+### Preparar as máquinas
+
+`minicurso/preparar-maquina.ps1` faz, por máquina e sem administrador: instala o
+`agy`, descompacta o app em `C:\minicurso\orquestrador`, cria a pasta de trabalho
+`C:\minicurso\workspace`, aponta `AGENT_ORCHESTRATOR_TERMINAL_CWD` e
+`AGENT_ORCHESTRATOR_WATCH_DIR` para ela e cria o atalho na área de trabalho.
+
+```powershell
+.\preparar-maquina.ps1 -Zip .\orquestrador-1.0.0-win-x64.zip
+```
+
+O que o script **não** automatiza, e nem dá: o assistente de primeiro uso do `agy`
+e o login no navegador. São dois minutos por máquina, na mão.
+
+### A IA gratuita, em outubro de 2026
+
+O acesso gratuito com conta Google **saiu do Gemini CLI**: o README oficial dele diz
+que foi substituído pelo Antigravity CLI em 18/06/2026 para camada gratuita e Google
+One. O que restou no Gemini CLI para quem não paga é a chave de API — 250 req/dia,
+só modelos Flash, e **por projeto, não por usuário**, o que não divide entre alunos.
+
+Por isso o primeiro agente do `agents.json` é o **Antigravity CLI** (`agy`): oficial,
+binário (não precisa de Node), gratuito com conta Google e TUI interativa, o que o
+faz funcionar com o `delivery: "paste"` sem mexer em código.
+
+**O limite é o ponto cego.** O Google não publica a cota do plano gratuito, só diz
+"basic weekly rate limits" — e são semanais, não diárias. Rode `/usage` dentro do
+`agy` numa máquina preparada e anote o número **antes** de desenhar a aula: ele
+determina quantos turnos de agente por aluno a turma aguenta. Se for apertado, cada
+aluno com a própria conta Google multiplica a cota, e o Ollama local serve de plano B
+sem conta e sem internet.
+
+---
+
 ## 🧠 Terminais com contexto (skills + IA)
 
 Ao criar um terminal você escolhe três coisas na barra superior: **Shell**, **IA** e **Skill**.

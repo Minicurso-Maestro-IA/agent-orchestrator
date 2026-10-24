@@ -3,6 +3,16 @@
   "//delivery": "'paste' abre a CLI e cola a skill como primeiro prompt (funciona com qualquer CLI interativa). 'arg' passa a skill via skillArgs, com os placeholders {skillFile} e {skillName}.",
   "agents": [
     {
+      "id": "antigravity",
+      "label": "Antigravity CLI (grátis)",
+      "command": "agy",
+      "args": [],
+      "delivery": "paste",
+      "readyDelayMs": 6000,
+      "description": "CLI do Google que substituiu o acesso gratuito do Gemini CLI em 18/06/2026. Binário, não precisa de Node.",
+      "install": "irm https://antigravity.google/cli/install.ps1 | iex"
+    },
+    {
       "id": "claude",
       "label": "Claude Code",
       "command": "claude",
@@ -19,7 +29,7 @@
       "args": [],
       "delivery": "paste",
       "readyDelayMs": 4000,
-      "description": "CLI do Google Gemini",
+      "description": "Acesso gratuito com conta Google encerrado em 18/06/2026; hoje só com chave de API (250 req/dia, só Flash) ou plano pago",
       "install": "npm i -g @google/gemini-cli"
     },
     {
@@ -33,14 +43,30 @@
       "install": "npm i -g @openai/codex"
     },
     {
+      "id": "qwen",
+      "label": "Qwen Code",
+      "command": "qwen",
+      "args": [],
+      "delivery": "paste",
+      "readyDelayMs": 4000,
+      "description": "Alternativa gratuita; o provedor é escolhido dentro da sessão com /auth",
+      "install": "irm https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.ps1 | iex"
+    },
+    {
       "id": "exemplo-custom",
       "label": "Exemplo (custom)",
       "command": "echo",
-      "args": ["agente-custom-iniciado"],
+      "args": [
+        "agente-custom-iniciado"
+      ],
       "delivery": "arg",
-      "skillArgs": ["--contexto", "{skillFile}"],
+      "skillArgs": [
+        "--contexto",
+        "{skillFile}"
+      ],
       "description": "Modelo para plugar qualquer CLI own/local",
       "install": ""
     }
-  ]
+  ],
+  "//gratuito": "O primeiro da lista (antigravity) é o caminho gratuito atual do Google. Instale com o comando em 'install' e rode 'agy' uma vez na mão antes da aula: o primeiro uso tem um assistente (tema, modo de render, confiar na pasta) e o login no navegador, que não dá para automatizar."
 }

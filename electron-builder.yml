@@ -1,0 +1,43 @@
+# Empacotamento para a sala de aula: um zip com o exe, o agents.json e as skills
+# lado a lado, do jeito que o skill-registry e o agent-registry já procuram
+# (path.dirname(app.getPath('exe'))). Sem instalador, para rodar sem admin.
+appId: com.minicurso.agentorchestrator
+productName: Agent Orchestrator
+
+# node-pty 1.1.0 é addon Node-API e publica binários prontos para win32-x64, então
+# não há nada para recompilar — e é isso que permite montar o zip de Windows numa
+# máquina Linux. Com o rebuild ligado, o node-gyp aborta: não cross-compila.
+npmRebuild: false
+
+directories:
+  output: release
+
+files:
+  - '!src/**'
+  - '!electron.vite.config.*'
+  - '!tsconfig.json'
+  - '!electron-builder.yml'
+  # O build nativo local (Linux, na máquina que empacota) não serve no Windows e
+  # fica na frente do prebuild na ordem de busca do node-pty.
+  - '!node_modules/node-pty/build/**'
+  - '!node_modules/node-pty/prebuilds/darwin-*/**'
+
+# node-pty não pode ficar dentro do asar: o ConPTY carrega uma DLL de verdade de
+# third_party/conpty/win10-x64/, e DLL não é carregável de dentro de um archive.
+asarUnpack:
+  - '**/node_modules/node-pty/**'
+
+# Ao lado do exe, não em resources/: é onde os registries procuram, e é o que
+# permite o aluno abrir o agents.json e as skills num editor de texto.
+extraFiles:
+  - from: agents.json
+    to: agents.json
+  - from: skills
+    to: skills
+
+win:
+  target:
+    - target: zip
+      arch:
+        - x64
+  artifactName: orquestrador-${version}-win-x64.${ext}

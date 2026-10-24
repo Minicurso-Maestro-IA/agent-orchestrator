@@ -73,7 +73,15 @@ export class PtyManager extends EventEmitter {
 
     const cols = options.cols || 80
     const rows = options.rows || 24
-    const cwd = options.cwd || process.env.USERPROFILE || process.env.HOME || process.cwd()
+    // AGENT_ORCHESTRATOR_TERMINAL_CWD existe para sala de aula e demo: faz todo
+    // terminal novo nascer na pasta de trabalho do exercício, em vez da home do
+    // usuário. Mesma convenção das outras variáveis AGENT_ORCHESTRATOR_*.
+    const cwd =
+      options.cwd ||
+      process.env.AGENT_ORCHESTRATOR_TERMINAL_CWD ||
+      process.env.USERPROFILE ||
+      process.env.HOME ||
+      process.cwd()
 
     const isWin = os.platform() === 'win32'
     const env = {
