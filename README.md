@@ -274,6 +274,80 @@ um botão **Retomar**.
 
 ---
 
+## 🔁 Estado do nó, entrega por arquivo e agentes que criam agentes
+
+### Estado do nó
+
+Cada nó de terminal mostra no cabeçalho o que está fazendo: **trabalhando** (saindo
+saída agora), **ocioso** (sessão viva, calada) ou **encerrado**. O estado vem do
+fluxo de bytes do PTY, com 1,2 s de silêncio separando "trabalhando" de "ocioso".
+
+Não existe um estado "esperando o usuário": distinguir isso de "parado" exigiria
+interpretar a tela, que muda a cada versão de cada CLI. O que está aqui é o que dá
+para afirmar sem adivinhar.
+
+### Entrega do contexto por arquivo
+
+Antes, o app subia a CLI, esperava `readyDelayMs` e colava a skill torcendo para a
+CLI já estar pronta. Quando a máquina estava lenta, o texto caía no vazio.
+
+Agora, uma CLI que aceita prompt inicial recebe o caminho de um arquivo pronto:
+
+```json
+{
+  "id": "antigravity",
+  "command": "agy",
+  "delivery": "arg",
+  "skillArgs": ["-i", "Leia o arquivo {promptFile} e siga as instruções que estão nele."]
+}
+```
+
+`{promptFile}` é montado pelo app com **skill + tarefa + protocolo de orquestração**,
+nessa ordem. Some a espera cega e some o inferno de aspas de passar markdown
+multilinha como argumento.
+
+> `{promptFile}` é o único placeholder que carrega o protocolo. `{skillFile}` e
+> `{skillName}` entregam a skill crua e deixam o nó **fora** do pipeline — existem
+> para CLIs que só sabem receber um arquivo de contexto.
+
+O `paste` continua valendo como padrão para qualquer CLI interativa sem flag de
+prompt inicial.
+
+### Agentes que criam agentes
+
+O agente pode pedir um agente novo, gravando um JSON na pasta de
+`ORCHESTRATOR_EVENTS_DIR` (a mesma dos documentos):
+
+```json
+{ "spawn": "Revisor", "from": "<ORCHESTRATOR_TERMINAL_ID>", "task": "Revise src/api.ts" }
+```
+
+Campos opcionais: `agent` (id do `agents.json`; sem ele, herda a CLI de quem pediu) e
+`skill`. O nó nasce ao lado de quem pediu, **ligado a ele**, e a tarefa viaja junto do
+primeiro prompt — não existe "esperar a CLI subir para então mandar o trabalho".
+
+O terminal agora conhece o próprio id em `ORCHESTRATOR_TERMINAL_ID`, que é o que
+permite ao agente pedir um filho ligado a si mesmo.
+
+**Freio:** no máximo 8 agentes criados por agentes por sessão. Um agente que se
+divide sem parar enche o canvas e esvazia a cota antes de alguém perceber. O limite
+é só para spawn automático; criar nós à mão continua livre. O botão **Retomar** da
+barra superior zera o contador, junto com os saltos do pipeline.
+
+### Confirmações de permissão travam o pipeline
+
+Uma CLI que pede confirmação a cada escrita de arquivo **para o pipeline automático**,
+que não tem humano no meio para clicar. Cada CLI tem a sua saída: no `agy` é
+`--dangerously-skip-permissions`, no `claude` é `--permission-mode`. Use apenas numa
+pasta de exercício, nunca num repositório de verdade — é literalmente dar ao agente
+escrita sem pergunta. Para ligar, acrescente a flag em `args` no `agents.json`:
+
+```json
+{ "id": "antigravity-aula", "command": "agy", "args": ["--dangerously-skip-permissions"] }
+```
+
+---
+
 ## 📄 Nós de documento e grupos
 
 ### Documentos (.md) no canvas

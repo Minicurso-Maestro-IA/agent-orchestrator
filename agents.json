@@ -7,10 +7,13 @@
       "label": "Antigravity CLI (grátis)",
       "command": "agy",
       "args": [],
-      "delivery": "paste",
-      "readyDelayMs": 6000,
-      "description": "CLI do Google que substituiu o acesso gratuito do Gemini CLI em 18/06/2026. Binário, não precisa de Node.",
-      "install": "irm https://antigravity.google/cli/install.ps1 | iex"
+      "delivery": "arg",
+      "description": "CLI do Google que substituiu o acesso gratuito do Gemini CLI em 18/06/2026. Binário, não precisa de Node. Sobe já com o contexto via -i, sem espera cega.",
+      "install": "irm https://antigravity.google/cli/install.ps1 | iex",
+      "skillArgs": [
+        "-i",
+        "Leia o arquivo {promptFile} e siga as instruções que estão nele."
+      ]
     },
     {
       "id": "claude",
@@ -68,5 +71,6 @@
       "install": ""
     }
   ],
-  "//gratuito": "O primeiro da lista (antigravity) é o caminho gratuito atual do Google. Instale com o comando em 'install' e rode 'agy' uma vez na mão antes da aula: o primeiro uso tem um assistente (tema, modo de render, confiar na pasta) e o login no navegador, que não dá para automatizar."
+  "//gratuito": "O primeiro da lista (antigravity) é o caminho gratuito atual do Google. Instale com o comando em 'install' e rode 'agy' uma vez na mão antes da aula: o primeiro uso tem um assistente (tema, modo de render, confiar na pasta) e o login no navegador, que não dá para automatizar.",
+  "//entrega": "'{promptFile}' é o arquivo que o app monta com a skill, a tarefa e o protocolo de orquestração. Prefira-o ao 'paste': a CLI sobe já com o contexto, em vez de o app esperar readyDelayMs e colar torcendo pelo tempo certo."
 }

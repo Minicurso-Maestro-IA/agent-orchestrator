@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
-import { DocumentEvent } from '@shared/types'
+import { AgentSpawnEvent, DocumentEvent } from '@shared/types'
 
 /**
  * Descobre documentos markdown de duas formas, porque nenhuma sozinha basta:
@@ -11,6 +11,11 @@ import { DocumentEvent } from '@shared/types'
  *    de IA ignore nossas instruções.
  * 2. Lendo anúncios do agente — um JSON que ele grava dizendo qual arquivo abriu
  *    e por quê. O disco não conta a intenção; o anúncio sim.
+ *
+ * A mesma pasta de anúncios serve de canal para o agente pedir a criação de
+ * outro agente ({ "spawn": ... }), por ser o único caminho de volta que já
+ * existe: qualquer CLI sabe gravar um arquivo, e arquivo não sofre com a quebra
+ * em 80 colunas nem com os códigos ANSI da saída do PTY.
  */
 
 const POLL_MS = 500
@@ -105,7 +110,15 @@ export class DocumentWatcher extends EventEmitter {
       const text = raw.replace(/^﻿/, '').trim()
       if (!text.endsWith('}')) continue
 
-      let parsed: { document?: unknown; intent?: unknown }
+      let parsed: {
+        document?: unknown
+        intent?: unknown
+        spawn?: unknown
+        from?: unknown
+        task?: unknown
+        agent?: unknown
+        skill?: unknown
+      }
       try {
         parsed = JSON.parse(text)
       } catch {
@@ -113,6 +126,18 @@ export class DocumentWatcher extends EventEmitter {
         continue
       }
       fs.rmSync(full, { force: true })
+
+      if (typeof parsed.spawn === 'string') {
+        const event: AgentSpawnEvent = {
+          name: parsed.spawn,
+          from: typeof parsed.from === 'string' ? parsed.from : undefined,
+          task: typeof parsed.task === 'string' ? parsed.task : undefined,
+          agentId: typeof parsed.agent === 'string' ? parsed.agent : undefined,
+          skillId: typeof parsed.skill === 'string' ? parsed.skill : undefined
+        }
+        this.emit('spawn', event)
+        continue
+      }
 
       if (typeof parsed.document !== 'string') continue
       const target = path.isAbsolute(parsed.document)

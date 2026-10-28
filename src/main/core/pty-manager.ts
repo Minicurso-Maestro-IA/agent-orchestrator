@@ -1,17 +1,23 @@
 import { EventEmitter } from 'events'
 import * as os from 'os'
+import * as fs from 'fs'
+import * as path from 'path'
 import * as crypto from 'crypto'
+import { app } from 'electron'
 import * as pty from 'node-pty'
 import {
   TerminalInfo,
   TerminalSpawnOptions,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalActivity,
+  TerminalActivityEvent,
   TerminalShell,
   AgentDefinition
 } from '@shared/types'
 import { findAgent } from './agent-registry'
 import { findSkill, readSkillBody } from './skill-registry'
+import type { SkillInfo } from '@shared/types'
 import { pipelineWatcher } from './pipeline-watcher'
 import { documentWatcher } from './document-watcher'
 
@@ -19,12 +25,20 @@ interface ActivePtySession {
   info: TerminalInfo
   ptyProcess: pty.IPty
   timers: NodeJS.Timeout[]
+  activity: TerminalActivity
+  /** Desarmado a cada byte: é o que faz 'working' voltar a 'idle' sozinho. */
+  quiet: NodeJS.Timeout | null
 }
 
 /** Espera no máximo isso pelo prompt do shell antes de mandar o comando mesmo assim. */
 const SHELL_PROMPT_TIMEOUT_MS = 4000
 /** Um chunk desse tamanho já indica prompt desenhado, não só escapes de modo do ConPTY. */
 const PROMPT_CHUNK_MIN_LEN = 20
+/**
+ * Silêncio que separa 'working' de 'idle'. Curto demais pisca a cada pausa do
+ * agente entre tokens; longo demais faz o nó parecer ocupado depois de pronto.
+ */
+const QUIET_MS = 1200
 
 export class PtyManager extends EventEmitter {
   private sessions = new Map<string, ActivePtySession>()
@@ -91,8 +105,10 @@ export class PtyManager extends EventEmitter {
       COLORTERM: 'truecolor',
       // O agente grava aqui o veredito do seu turno; o PipelineWatcher lê e rotea.
       ORCHESTRATOR_STATUS_FILE: pipelineWatcher.statusFileFor(id),
-      // Onde o agente anuncia um documento que abriu no meio do turno.
-      ORCHESTRATOR_EVENTS_DIR: documentWatcher.announceDirFor()
+      // Onde o agente anuncia um documento, ou pede a criação de outro agente.
+      ORCHESTRATOR_EVENTS_DIR: documentWatcher.announceDirFor(),
+      // O agente precisa saber quem ele é para pedir um agente ligado a si mesmo.
+      ORCHESTRATOR_TERMINAL_ID: id
     } as Record<string, string>
 
     const ptyProcess = pty.spawn(file, args, {
@@ -129,19 +145,26 @@ export class PtyManager extends EventEmitter {
       skillName: skill?.name
     }
 
-    const session: ActivePtySession = { info, ptyProcess, timers: [] }
+    const session: ActivePtySession = {
+      info,
+      ptyProcess,
+      timers: [],
+      activity: 'idle',
+      quiet: null
+    }
     this.sessions.set(id, session)
 
     let bootstrapped = false
     const bootstrap = (): void => {
       if (bootstrapped) return
       bootstrapped = true
-      if (agent) this.startAgent(id, agent, options.skillId)
+      if (agent) this.startAgent(id, agent, options.skillId, options.task)
     }
 
     ptyProcess.onData((data: string) => {
       const event: TerminalDataEvent = { id, data }
       this.emit('data', event)
+      this.markBusy(id)
       // O prompt do shell pode demorar (PowerShell leva ~1.4s). Só mandamos o
       // comando do agente depois que ele aparece, senão o eco sai embaralhado.
       if (agent && !bootstrapped && data.length >= PROMPT_CHUNK_MIN_LEN) bootstrap()
@@ -154,6 +177,8 @@ export class PtyManager extends EventEmitter {
     ptyProcess.onExit(({ exitCode, signal }: { exitCode: number; signal?: number }) => {
       const s = this.sessions.get(id)
       s?.timers.forEach(clearTimeout)
+      if (s?.quiet) clearTimeout(s.quiet)
+      this.setActivity(id, 'stopped')
       this.sessions.delete(id)
       const event: TerminalExitEvent = { id, exitCode, signal }
       this.emit('exit', event)
@@ -195,7 +220,18 @@ export class PtyManager extends EventEmitter {
       '',
       documentWatcher.announceDirFor(),
       '',
-      '{ "document": "<caminho do .md>", "intent": "<por que você abriu>" }'
+      '{ "document": "<caminho do .md>", "intent": "<por que você abriu>" }',
+      '',
+      '### Criando outro agente',
+      '',
+      'Se a tarefa se divide em frentes independentes, você pode pedir um agente novo',
+      'em vez de fazer tudo sozinho. Grave um JSON de nome único na MESMA pasta acima:',
+      '',
+      `{ "spawn": "Revisor", "from": "${id}", "task": "<o pedido completo>", "agent": "<id opcional>", "skill": "<id opcional>" }`,
+      '',
+      'Ele nasce no canvas ligado a você, com a tarefa já entregue. Escreva o pedido',
+      'completo e independente: o outro agente não vê a sua conversa. Peça um agente',
+      'só quando as frentes forem de fato paralelas — cada um consome cota.'
     ].join('\n')
   }
 
@@ -214,19 +250,86 @@ export class PtyManager extends EventEmitter {
     return `"${value.replace(/"/g, '\\"')}"`
   }
 
-  private startAgent(id: string, agent: AgentDefinition, skillId?: string): void {
+  /** Skill, tarefa e protocolo, na ordem em que o agente deve lê-los. */
+  private composePrompt(id: string, skill: SkillInfo | undefined, task?: string): string {
+    const blocks: string[] = []
+    if (skill) {
+      const body = readSkillBody(skill.id)
+      if (body) blocks.push(body)
+      else this.notify(id, `▸ Skill "${skill.name}" não pôde ser lida; seguindo sem contexto.`)
+    }
+    if (task) blocks.push(`## Sua tarefa\n\n${task}`)
+    // Sempre vai, mesmo sem skill: sem ele o agente não participa do pipeline.
+    blocks.push(this.protocolText(id))
+    return blocks.join('\n\n---\n\n')
+  }
+
+  /**
+   * Grava o prompt inicial em disco para a CLI abrir. Passar o texto por arquivo
+   * evita dois problemas de uma vez: o inferno de aspas e quebras de linha num
+   * argumento de linha de comando, e a espera cega do `paste`, que depende de a
+   * CLI ter subido dentro de readyDelayMs.
+   */
+  private writePromptFile(id: string, text: string): string | null {
+    try {
+      const dir = path.join(app.getPath('userData'), 'prompts')
+      fs.mkdirSync(dir, { recursive: true })
+      const file = path.join(dir, `${id}.md`)
+      fs.writeFileSync(file, text, 'utf8')
+      return file
+    } catch (err) {
+      console.warn('[PtyManager] Falha ao gravar o prompt inicial:', err)
+      return null
+    }
+  }
+
+  private clearPromptFile(id: string): void {
+    try {
+      fs.rmSync(path.join(app.getPath('userData'), 'prompts', `${id}.md`), { force: true })
+    } catch {
+      // o arquivo pode nem ter sido criado
+    }
+  }
+
+  private startAgent(
+    id: string,
+    agent: AgentDefinition,
+    skillId?: string,
+    task?: string
+  ): void {
     const session = this.sessions.get(id)
     if (!session) return
 
     const skill = skillId ? findSkill(skillId) : undefined
     const delivery = agent.delivery || 'paste'
+    const prompt = this.composePrompt(id, skill, task)
 
     const parts = [agent.command, ...(agent.args || [])]
-    if (skill && delivery === 'arg' && agent.skillArgs?.length) {
-      for (const raw of agent.skillArgs) {
-        parts.push(
-          this.quoteArg(raw.replace(/\{skillFile\}/g, skill.path).replace(/\{skillName\}/g, skill.name))
-        )
+
+    if (delivery === 'arg' && agent.skillArgs?.length) {
+      // \u0000 não aparece em caminho nem em nome de skill: serve só para
+      // procurar os placeholders no conjunto dos argumentos de uma vez.
+      const template = agent.skillArgs.join('\u0000')
+      const wantsPromptFile = template.includes('{promptFile}')
+      const wantsRawSkill = /\{skillFile\}|\{skillName\}/.test(template)
+
+      // Um template que só sabe pedir a skill crua não tem o que fazer sem skill.
+      if (!wantsRawSkill || skill) {
+        const promptFile = wantsPromptFile ? this.writePromptFile(id, prompt) : null
+        if (wantsPromptFile && !promptFile) {
+          this.notify(id, '▸ Não consegui preparar o contexto inicial; o agente sobe sem ele.')
+        } else {
+          for (const raw of agent.skillArgs) {
+            parts.push(
+              this.quoteArg(
+                raw
+                  .replace(/\{promptFile\}/g, promptFile ?? '')
+                  .replace(/\{skillFile\}/g, skill?.path ?? '')
+                  .replace(/\{skillName\}/g, skill?.name ?? '')
+              )
+            )
+          }
+        }
       }
     }
 
@@ -240,17 +343,7 @@ export class PtyManager extends EventEmitter {
 
     if (delivery !== 'paste') return
 
-    // O protocolo vai junto da skill num colar só: o agente precisa dele para
-    // participar do pipeline, mesmo quando nenhuma skill foi escolhida.
-    const blocks: string[] = []
-    if (skill) {
-      const body = readSkillBody(skill.id)
-      if (body) blocks.push(body)
-      else this.notify(id, `▸ Skill "${skill.name}" não pôde ser lida; seguindo sem contexto.`)
-    }
-    blocks.push(this.protocolText(id))
-
-    const payload = blocks.join('\n\n---\n\n').replace(/\r?\n/g, '\r')
+    const payload = prompt.replace(/\r?\n/g, '\r')
     session.timers.push(
       setTimeout(() => {
         const live = this.sessions.get(id)
@@ -261,6 +354,27 @@ export class PtyManager extends EventEmitter {
         live.timers.push(setTimeout(() => this.sessions.get(id)?.ptyProcess.write('\r'), 250))
       }, agent.readyDelayMs ?? 4000)
     )
+  }
+
+  // --- Atividade do nó -------------------------------------------------------
+
+  private setActivity(id: string, activity: TerminalActivity): void {
+    const session = this.sessions.get(id)
+    // 'stopped' é emitido durante o encerramento, quando a sessão ainda existe
+    // mas já não importa o estado anterior.
+    if (session && session.activity === activity) return
+    if (session) session.activity = activity
+    const event: TerminalActivityEvent = { id, activity, since: Date.now() }
+    this.emit('activity', event)
+  }
+
+  /** Byte recebido: o nó está trabalhando, e volta a ocioso depois do silêncio. */
+  private markBusy(id: string): void {
+    const session = this.sessions.get(id)
+    if (!session) return
+    this.setActivity(id, 'working')
+    if (session.quiet) clearTimeout(session.quiet)
+    session.quiet = setTimeout(() => this.setActivity(id, 'idle'), QUIET_MS)
   }
 
   public write(id: string, data: string): void {
@@ -285,6 +399,7 @@ export class PtyManager extends EventEmitter {
     const session = this.sessions.get(id)
     if (session) {
       session.timers.forEach(clearTimeout)
+      if (session.quiet) clearTimeout(session.quiet)
       try {
         session.ptyProcess.kill()
       } catch (err) {
@@ -292,6 +407,7 @@ export class PtyManager extends EventEmitter {
       }
       this.sessions.delete(id)
       pipelineWatcher.clear(id)
+      this.clearPromptFile(id)
       return true
     }
     return false
@@ -304,7 +420,9 @@ export class PtyManager extends EventEmitter {
   public killAll(): void {
     for (const [id, session] of this.sessions) {
       session.timers.forEach(clearTimeout)
+      if (session.quiet) clearTimeout(session.quiet)
       pipelineWatcher.clear(id)
+      this.clearPromptFile(id)
       try {
         session.ptyProcess.kill()
       } catch {
@@ -320,6 +438,10 @@ export class PtyManager extends EventEmitter {
 
   public onExit(callback: (event: TerminalExitEvent) => void): this {
     return this.on('exit', callback)
+  }
+
+  public onActivity(callback: (event: TerminalActivityEvent) => void): this {
+    return this.on('activity', callback)
   }
 }
 

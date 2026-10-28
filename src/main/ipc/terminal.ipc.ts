@@ -9,7 +9,9 @@ import {
   TerminalSpawnOptions,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalActivityEvent,
   PipelineStatusEvent,
+  AgentSpawnEvent,
   DocumentEvent
 } from '@shared/types'
 
@@ -68,6 +70,13 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     }
   })
 
+  ptyManager.onActivity((event: TerminalActivityEvent) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('terminal:activity', event)
+    }
+  })
+
   ptyManager.onExit((event: TerminalExitEvent) => {
     const window = getMainWindow()
     if (window && !window.isDestroyed()) {
@@ -83,6 +92,14 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     }
   })
   pipelineWatcher.start()
+
+  // Quem cria o nó e desenha a ligação é o renderer, dono do canvas.
+  documentWatcher.on('spawn', (event: AgentSpawnEvent) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('agent:spawn', event)
+    }
+  })
 
   documentWatcher.on('document', (event: DocumentEvent) => {
     const window = getMainWindow()

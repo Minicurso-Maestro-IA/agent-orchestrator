@@ -42,6 +42,31 @@ const HANDLE_SIDES = [
   { id: 'left', position: Position.Left }
 ] as const
 
+/**
+ * O estado vem do fluxo de bytes do PTY (ver TerminalActivity). É a leitura que
+ * o aluno faz de relance: quem está trabalhando, quem parou, quem morreu.
+ */
+const ACTIVITY_STYLES = {
+  working: {
+    dot: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)] animate-pulse',
+    badge: 'bg-amber-500/15 text-amber-200 border-amber-400/40',
+    label: 'trabalhando',
+    title: 'Saindo saída agora'
+  },
+  idle: {
+    dot: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]',
+    badge: 'bg-emerald-500/15 text-emerald-200 border-emerald-400/40',
+    label: 'ocioso',
+    title: 'Sessão ativa, sem saída no momento'
+  },
+  stopped: {
+    dot: 'bg-slate-500',
+    badge: 'bg-slate-600/30 text-slate-300 border-slate-500/40',
+    label: 'encerrado',
+    title: 'Processo encerrado'
+  }
+} as const
+
 function TerminalNodeComponent({
   id,
   data,
@@ -53,6 +78,9 @@ function TerminalNodeComponent({
 
   const closeTerminal = useTerminalStore((s) => s.closeTerminal)
   const setTerminalActive = useTerminalStore((s) => s.setTerminalActive)
+
+  const activityDot =
+    ACTIVITY_STYLES[!data.active ? 'stopped' : data.activity ?? 'idle'] ?? ACTIVITY_STYLES.idle
 
   useEffect(() => {
     if (!terminalContainerRef.current) return
@@ -188,12 +216,8 @@ function TerminalNodeComponent({
       <div className="terminal-drag-handle flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-600 cursor-grab active:cursor-grabbing select-none">
         <div className="flex items-center gap-2 min-w-0">
           <span
-            className={`w-2.5 h-2.5 rounded-full transition-colors flex-shrink-0 ${
-              data.active
-                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]'
-                : 'bg-slate-500'
-            }`}
-            title={data.active ? 'Sessão ativa' : 'Sessão encerrada'}
+            className={`w-2.5 h-2.5 rounded-full transition-colors flex-shrink-0 ${activityDot.dot}`}
+            title={activityDot.title}
           />
 
           <TerminalIcon className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
@@ -208,6 +232,13 @@ function TerminalNodeComponent({
             }`}
           >
             {data.shell}
+          </span>
+
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded border leading-none font-medium flex-shrink-0 ${activityDot.badge}`}
+            title={activityDot.title}
+          >
+            {activityDot.label}
           </span>
 
           {data.agentLabel && (

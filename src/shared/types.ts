@@ -4,7 +4,8 @@ export type TerminalShell = 'powershell' | 'cmd' | 'wsl'
  * Como o conteúdo da skill chega até a CLI de IA.
  * - 'paste': abre a CLI e entrega a skill como um "colar" (bracketed paste) seguido de Enter.
  *   Funciona com qualquer CLI interativa, sem depender de flags específicas.
- * - 'arg': passa o conteúdo da skill como argumento, usando `skillArgs` como template.
+ * - 'arg': passa a skill por argumento, usando `skillArgs` como template. Prefira
+ *   `{promptFile}`: a CLI sobe já com o contexto, sem depender de tempo de espera.
  */
 export type SkillDelivery = 'paste' | 'arg'
 
@@ -17,7 +18,11 @@ export interface AgentDefinition {
   args?: string[]
   /**
    * Usado quando delivery === 'arg'. Placeholders suportados:
-   * `{skillFile}` (caminho absoluto do .md) e `{skillName}`.
+   * - `{promptFile}`: arquivo com a skill, a tarefa e o protocolo de orquestração
+   *   já montados. É o único que carrega o protocolo, então é o que mantém o nó
+   *   dentro do pipeline; os outros dois existem para CLIs que esperam a skill crua.
+   * - `{skillFile}`: caminho absoluto do .md da skill.
+   * - `{skillName}`: nome da skill.
    */
   skillArgs?: string[]
   delivery?: SkillDelivery
@@ -47,6 +52,12 @@ export interface TerminalSpawnOptions {
   agentId?: string
   /** Opcional: carrega esta skill como contexto inicial do agente. */
   skillId?: string
+  /**
+   * Trabalho entregue junto do primeiro prompt. Usado quando um agente cria
+   * outro: evita ter de adivinhar quando a CLI terminou de subir para só então
+   * mandar a tarefa.
+   */
+  task?: string
 }
 
 export interface TerminalInfo {
@@ -60,6 +71,21 @@ export interface TerminalInfo {
   agentLabel?: string
   skillId?: string
   skillName?: string
+}
+
+/**
+ * O que o nó está fazendo, derivado do fluxo de bytes do PTY — não de leitura de
+ * tela. 'working' enquanto sai saída, 'idle' quando silencia, 'stopped' no fim.
+ *
+ * Não existe 'needs-input' aqui: distinguir "esperando o usuário" de "parado"
+ * exigiria interpretar a tela, que quebra a cada versão de cada CLI.
+ */
+export type TerminalActivity = 'working' | 'idle' | 'stopped'
+
+export interface TerminalActivityEvent {
+  id: string
+  activity: TerminalActivity
+  since: number
 }
 
 export interface TerminalDataEvent {
@@ -89,6 +115,8 @@ export interface OrchestratorAPI {
   createDocument: (name: string, content: string) => Promise<DocumentInfo | null>
   onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
   onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
+  onTerminalActivity: (callback: (event: TerminalActivityEvent) => void) => () => void
+  onAgentSpawn: (callback: (event: AgentSpawnEvent) => void) => () => void
   onPipelineStatus: (callback: (event: PipelineStatusEvent) => void) => () => void
   onDocument: (callback: (event: DocumentEvent) => void) => () => void
 }
@@ -104,6 +132,23 @@ export interface PipelineStatusEvent {
   status: PipelineStatus
   reason?: string
   files?: string[]
+}
+
+/**
+ * Pedido de um agente para criar outro agente, gravado como JSON na pasta de
+ * anúncios. É o mesmo canal dos documentos: arquivo em vez de marcador na tela,
+ * porque a saída do PTY quebra em 80 colunas e vem cheia de códigos ANSI.
+ */
+export interface AgentSpawnEvent {
+  /** Terminal que pediu, de ORCHESTRATOR_TERMINAL_ID. Sem ele o nó nasce solto. */
+  from?: string
+  /** Nome do nó no canvas. */
+  name?: string
+  /** Id em agents.json. Sem ele, herda o agente de quem pediu. */
+  agentId?: string
+  skillId?: string
+  /** Entregue junto do primeiro prompt do novo agente. */
+  task?: string
 }
 
 export interface DocumentInfo {
@@ -144,4 +189,9 @@ export interface TerminalNodeData extends Record<string, unknown> {
   rows?: number
   agentLabel?: string
   skillName?: string
+  agentId?: string
+  skillId?: string
+  activity?: TerminalActivity
+  /** Marca os nós que um agente criou, para distinguir do que o humano desenhou. */
+  spawnedBy?: string
 }

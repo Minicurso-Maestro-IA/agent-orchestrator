@@ -5,6 +5,8 @@ import {
   TerminalInfo,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalActivityEvent,
+  AgentSpawnEvent,
   SkillInfo,
   AgentDefinition,
   PipelineStatusEvent,
@@ -62,6 +64,24 @@ const orchestratorAPI: OrchestratorAPI = {
     ipcRenderer.on('terminal:exit', listener)
     return () => {
       ipcRenderer.removeListener('terminal:exit', listener)
+    }
+  },
+  onTerminalActivity: (callback: (event: TerminalActivityEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: TerminalActivityEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('terminal:activity', listener)
+    return () => {
+      ipcRenderer.removeListener('terminal:activity', listener)
+    }
+  },
+  onAgentSpawn: (callback: (event: AgentSpawnEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: AgentSpawnEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('agent:spawn', listener)
+    return () => {
+      ipcRenderer.removeListener('agent:spawn', listener)
     }
   },
   onPipelineStatus: (callback: (event: PipelineStatusEvent) => void): (() => void) => {

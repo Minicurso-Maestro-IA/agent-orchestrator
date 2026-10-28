@@ -30,6 +30,8 @@ export function SpatialCanvas(): ReactElement {
   const loadCatalog = useTerminalStore((s) => s.loadCatalog)
   const handlePipelineStatus = useTerminalStore((s) => s.handlePipelineStatus)
   const handleDocumentEvent = useTerminalStore((s) => s.handleDocumentEvent)
+  const handleAgentSpawn = useTerminalStore((s) => s.handleAgentSpawn)
+  const setTerminalActivity = useTerminalStore((s) => s.setTerminalActivity)
 
   const nodeTypes = useMemo(
     () => ({
@@ -62,6 +64,21 @@ export function SpatialCanvas(): ReactElement {
       handleDocumentEvent(event)
     })
   }, [handleDocumentEvent])
+
+  // O estado do nó vem do fluxo de bytes do PTY, não de leitura de tela.
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onTerminalActivity((event) => {
+      setTerminalActivity(event.id, event.activity)
+    })
+  }, [setTerminalActivity])
+
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onAgentSpawn((event) => {
+      handleAgentSpawn(event)
+    })
+  }, [handleAgentSpawn])
 
   // Inicialização: carregar catálogo de skills/agentes e criar 1 terminal de boas-vindas
   useEffect(() => {
