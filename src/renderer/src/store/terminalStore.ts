@@ -235,7 +235,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const verdict = event.status === 'approved' ? 'APROVADO' : 'REPROVADO'
     await api?.notifyTerminal(
       event.terminalId,
-      `▸ ${verdict}${event.reason ? `: ${event.reason}` : ''}`
+      `▸ ${verdict}${event.auto ? ' (automático: o agente encerrou sem gravar o status)' : ''}` +
+        (event.reason ? `: ${event.reason}` : '')
     )
 
     if (pipelineHalted) {

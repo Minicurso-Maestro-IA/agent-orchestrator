@@ -12,7 +12,7 @@
       "install": "irm https://antigravity.google/cli/install.ps1 | iex",
       "skillArgs": [
         "-i",
-        "Leia o arquivo {promptFile} e siga as instruções que estão nele."
+        "Leia e siga as instrucoes do arquivo {promptFile}"
       ]
     },
     {
@@ -20,10 +20,14 @@
       "label": "Claude Code",
       "command": "claude",
       "args": [],
-      "delivery": "paste",
-      "readyDelayMs": 4000,
-      "description": "CLI agêntica da Anthropic",
-      "install": "npm i -g @anthropic-ai/claude-code"
+      "delivery": "arg",
+      "description": "CLI agêntica da Anthropic. Sobe com o contexto via argumento e com o hook Stop ligado, que grava o veredito do pipeline mesmo se o agente esquecer — a única CLI do catálogo em que o veredito não depende de obediência.",
+      "install": "npm i -g @anthropic-ai/claude-code",
+      "skillArgs": [
+        "--settings",
+        "{claudeSettings}",
+        "Leia e siga as instrucoes do arquivo {promptFile}"
+      ]
     },
     {
       "id": "gemini",
@@ -72,5 +76,7 @@
     }
   ],
   "//gratuito": "O primeiro da lista (antigravity) é o caminho gratuito atual do Google. Instale com o comando em 'install' e rode 'agy' uma vez na mão antes da aula: o primeiro uso tem um assistente (tema, modo de render, confiar na pasta) e o login no navegador, que não dá para automatizar.",
-  "//entrega": "'{promptFile}' é o arquivo que o app monta com a skill, a tarefa e o protocolo de orquestração. Prefira-o ao 'paste': a CLI sobe já com o contexto, em vez de o app esperar readyDelayMs e colar torcendo pelo tempo certo."
+  "//entrega": "'{promptFile}' é o arquivo que o app monta com a skill, a tarefa e o protocolo de orquestração. Prefira-o ao 'paste': a CLI sobe já com o contexto, em vez de o app esperar readyDelayMs e colar torcendo pelo tempo certo.",
+  "//hook": "'{claudeSettings}' é um settings.json por sessão, passado em --settings, com o hook Stop apontando para hooks/claude-stop.cjs. Vai por sessão de propósito: o app não altera o ~/.claude/settings.json de quem o instalou.",
+  "//acentos": "O texto de skillArgs atravessa a linha de comando do shell. Sem acentos de proposito: no PowerShell 5.1 acento em argumento corrompe com facilidade, e o agente receberia a instrucao ilegivel. O conteudo com acento vai no promptFile, que e lido como UTF-8."
 }

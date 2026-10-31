@@ -98,9 +98,12 @@ Write-Host @"
 Máquina pronta. Falta o que só dá para fazer na mão:
 
   1. Abra um terminal NOVO (o PATH e as variáveis só valem em sessão nova).
-  2. Rode:  agy
-     - responda o assistente de primeiro uso (tema, render, confiar na pasta);
-     - faça login com a conta Google.
+  2. Rode, DENTRO de $workspaceDir, cada CLI que a turma vai usar:
+       agy        (assistente de primeiro uso + login com conta Google)
+       claude     (se for usar o Claude Code: confiar na pasta + login)
+     Isso NAO pode ser automatizado, e e obrigatorio: enquanto esse pedido
+     esta na tela, o agente nao le o prompt inicial, nao termina turno e o
+     pipeline nao roteia nada.
   3. Dentro do agy, rode  /usage  e ANOTE o limite que aparecer.
      O Google não publica a cota do plano gratuito, e ela é semanal.
      É esse número que diz quantos turnos de agente a turma aguenta.

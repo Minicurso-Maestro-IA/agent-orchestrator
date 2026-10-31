@@ -77,7 +77,7 @@ export class PipelineWatcher extends EventEmitter {
       // Escrita incompleta: espera o próximo ciclo em vez de descartar.
       if (!text.endsWith('}')) continue
 
-      let parsed: { status?: unknown; reason?: unknown; files?: unknown }
+      let parsed: { status?: unknown; reason?: unknown; files?: unknown; auto?: unknown }
       try {
         parsed = JSON.parse(text)
       } catch {
@@ -96,7 +96,8 @@ export class PipelineWatcher extends EventEmitter {
         terminalId: path.basename(file, '.json'),
         status: parsed.status,
         reason: typeof parsed.reason === 'string' ? parsed.reason : undefined,
-        files: Array.isArray(parsed.files) ? parsed.files.filter((f) => typeof f === 'string') : undefined
+        files: Array.isArray(parsed.files) ? parsed.files.filter((f) => typeof f === 'string') : undefined,
+        auto: parsed.auto === true
       }
       this.emit('status', event)
     }

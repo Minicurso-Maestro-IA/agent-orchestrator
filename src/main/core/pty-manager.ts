@@ -19,6 +19,7 @@ import { findAgent } from './agent-registry'
 import { findSkill, readSkillBody } from './skill-registry'
 import type { SkillInfo } from '@shared/types'
 import { pipelineWatcher } from './pipeline-watcher'
+import { clearClaudeSettings, writeClaudeSettings } from './claude-hooks'
 import { documentWatcher } from './document-watcher'
 
 interface ActivePtySession {
@@ -312,17 +313,36 @@ export class PtyManager extends EventEmitter {
       const template = agent.skillArgs.join('\u0000')
       const wantsPromptFile = template.includes('{promptFile}')
       const wantsRawSkill = /\{skillFile\}|\{skillName\}/.test(template)
+      const settingsFile = template.includes('{claudeSettings}')
+        ? writeClaudeSettings(id)
+        : null
 
       // Um template que só sabe pedir a skill crua não tem o que fazer sem skill.
       if (!wantsRawSkill || skill) {
         const promptFile = wantsPromptFile ? this.writePromptFile(id, prompt) : null
         if (wantsPromptFile && !promptFile) {
           this.notify(id, '▸ Não consegui preparar o contexto inicial; o agente sobe sem ele.')
+        } else if (template.includes('{claudeSettings}') && !settingsFile) {
+          // Passar --settings com caminho vazio faria a CLI recusar o argumento.
+          this.notify(id, '▸ Hook de status indisponível; o veredito volta a depender do agente.')
+          for (const raw of agent.skillArgs) {
+            if (raw.includes('{claudeSettings}')) continue
+            if (raw === '--settings') continue
+            parts.push(
+              this.quoteArg(
+                raw
+                  .replace(/\{promptFile\}/g, promptFile ?? '')
+                  .replace(/\{skillFile\}/g, skill?.path ?? '')
+                  .replace(/\{skillName\}/g, skill?.name ?? '')
+              )
+            )
+          }
         } else {
           for (const raw of agent.skillArgs) {
             parts.push(
               this.quoteArg(
                 raw
+                  .replace(/\{claudeSettings\}/g, settingsFile ?? '')
                   .replace(/\{promptFile\}/g, promptFile ?? '')
                   .replace(/\{skillFile\}/g, skill?.path ?? '')
                   .replace(/\{skillName\}/g, skill?.name ?? '')
@@ -408,6 +428,7 @@ export class PtyManager extends EventEmitter {
       this.sessions.delete(id)
       pipelineWatcher.clear(id)
       this.clearPromptFile(id)
+      clearClaudeSettings(id)
       return true
     }
     return false

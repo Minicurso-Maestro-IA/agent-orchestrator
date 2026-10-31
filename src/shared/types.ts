@@ -18,6 +18,9 @@ export interface AgentDefinition {
   args?: string[]
   /**
    * Usado quando delivery === 'arg'. Placeholders suportados:
+   * - `{claudeSettings}`: arquivo de settings no formato do Claude Code, com o
+   *   hook `Stop` que grava o veredito do pipeline. Específico dessa CLI; as
+   *   outras ignoram.
    * - `{promptFile}`: arquivo com a skill, a tarefa e o protocolo de orquestração
    *   já montados. É o único que carrega o protocolo, então é o que mantém o nó
    *   dentro do pipeline; os outros dois existem para CLIs que esperam a skill crua.
@@ -132,6 +135,12 @@ export interface PipelineStatusEvent {
   status: PipelineStatus
   reason?: string
   files?: string[]
+  /**
+   * O veredito foi gravado pelo hook, não pelo agente — ou seja, o agente
+   * encerrou o turno sem decidir. A tela diz isso, para ninguém confundir um
+   * "aprovado" automático com uma aprovação de verdade.
+   */
+  auto?: boolean
 }
 
 /**

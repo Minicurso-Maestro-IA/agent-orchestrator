@@ -34,6 +34,8 @@ extraFiles:
     to: agents.json
   - from: skills
     to: skills
+  - from: hooks
+    to: hooks
 
 win:
   target:

@@ -348,6 +348,78 @@ escrita sem pergunta. Para ligar, acrescente a flag em `args` no `agents.json`:
 
 ---
 
+## 🪝 Integração com o Claude Code: veredito que não depende de obediência
+
+O protocolo pede ao agente que grave o arquivo de status ao terminar. Funciona —
+mas depende de obediência. Quando o agente esquece, **nada roteia e o nó seguinte
+espera para sempre, sem erro na tela**. É a pior falha desse desenho, porque é
+silenciosa.
+
+O Claude Code tem um hook `Stop`, que dispara quando ele termina de responder.
+Apontado para `hooks/claude-stop.cjs`, o veredito deixa de ser um pedido e passa a
+ser mecânico:
+
+```json
+{
+  "id": "claude",
+  "command": "claude",
+  "delivery": "arg",
+  "skillArgs": ["--settings", "{claudeSettings}", "Leia e siga as instrucoes do arquivo {promptFile}"]
+}
+```
+
+`{claudeSettings}` é um `settings.json` **por sessão**, gerado pelo app. Vai por
+sessão de propósito: o app não tem o direito de alterar o `~/.claude/settings.json`
+de quem o instalou.
+
+O hook segue duas regras:
+
+- **Não encosta num veredito explícito.** Se o agente gravou o arquivo, ele vence.
+- **Se não gravou**, escreve `approved` com `auto: true`, e o orquestrador avisa na
+  tela: *"APROVADO (automático: o agente encerrou sem gravar o status)"*. Ninguém
+  confunde um aprovado automático com uma aprovação de verdade.
+
+Ele **não** tenta adivinhar reprovação lendo a resposta do agente. Procurar
+"reprovado" em prosa erra em frases como "não vou reprovar", e um falso aprovado é
+pior que um veredito ausente. Para reprovar, o agente grava o arquivo — é o que o
+protocolo pede.
+
+O hook recebe o caminho do status pelo ambiente (`ORCHESTRATOR_STATUS_FILE`, que ele
+herda do PTY) e lê `last_assistant_message` do stdin do evento. Node é garantido ali:
+o Claude Code é distribuído por npm, então onde ele roda, o `node` existe.
+
+### Por que os argumentos não têm acento
+
+O texto em `skillArgs` atravessa a linha de comando do shell, e no PowerShell 5.1
+acento em argumento corrompe com facilidade — o agente receberia a instrução
+ilegível. Todo o conteúdo com acento vai dentro do `{promptFile}`, que é lido como
+UTF-8. Mantenha `skillArgs` em ASCII.
+
+### Uma instância por vez
+
+O app agora recusa uma segunda instância e traz a primeira para a frente. Não é
+polimento: duas instâncias compartilham a mesma pasta de `userData` e, portanto, a
+mesma pasta de eventos e de status. Os dois observadores fazem polling do mesmo
+lugar e **consomem o arquivo do outro** — o veredito de um agente roteia no canvas
+errado, ou se perde. Um duplo clique no atalho bastava para cair nisso.
+
+### O que o orquestrador não consegue resolver: o primeiro uso da CLI
+
+Toda CLI de agente abre, na primeira vez numa pasta, algum pedido que só uma pessoa
+responde: "confia nos arquivos desta pasta?", escolha de tema, login. Enquanto isso
+está na tela, o agente **não lê o prompt inicial e não termina turno nenhum** —
+logo, nenhum hook dispara e nada roteia.
+
+Observado aqui: o Claude Code iniciado pelo orquestrador numa pasta nova ficou
+parado nesse estado indefinidamente.
+
+Não há solução dentro do app: responder por conta própria seria aceitar, em nome do
+usuário, que um agente mexa naqueles arquivos. **A cada máquina, rode uma vez na mão
+cada CLI que a turma vai usar, na pasta de trabalho**, e deixe o primeiro uso
+resolvido antes da aula. É o que `minicurso/preparar-maquina.ps1` instrui no fim.
+
+---
+
 ## 📄 Nós de documento e grupos
 
 ### Documentos (.md) no canvas
