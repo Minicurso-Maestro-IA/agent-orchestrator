@@ -5,9 +5,11 @@ description: "As etiquetas de categoria perderam a cor: todas iguais, impossíve
 
 # Virta V4 — Toda categoria aparece cinza
 
-As etiquetas de categoria (Mercado, Transporte, Salário) aparecem **todas na mesma
-cor cinza**, na lista de transações e no dashboard. Cada categoria tem a sua cor
-cadastrada, e nenhuma está sendo usada.
+As etiquetas de categoria (Mercado, Transporte, Salário) aparecem **todas cinzas**
+— o fundo e o texto. Mas repare na bolinha pequena dentro de cada etiqueta: ela
+mantém a cor certa de cada categoria.
+
+Ou seja, a cor **chega** ao componente. Ela só não é usada onde deveria.
 
 ## O que fazer
 
@@ -22,5 +24,6 @@ chega por `prop` nunca é aplicada.
 
 ## Olhe com atenção
 
-A linha culpada compila, não dá aviso nenhum e parece certa numa leitura rápida.
-Depois de consertar, explique em uma frase por que ela sempre devolvia cinza.
+Há duas variáveis de cor no componente, e uma delas é usada no lugar da outra.
+Compila, não gera aviso e passa numa leitura rápida. Depois de consertar, explique
+em uma frase qual era a confusão.
