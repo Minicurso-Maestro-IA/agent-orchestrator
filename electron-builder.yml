@@ -36,6 +36,14 @@ extraFiles:
     to: skills
   - from: hooks
     to: hooks
+  # O projeto que os alunos vão mexer. O preparar-maquina.ps1 copia daqui para
+  # a pasta de trabalho de cada máquina.
+  - from: minicurso/projeto-exemplo
+    to: projeto-exemplo
+    filter:
+      - '**/*'
+      - '!**/node_modules/**'
+      - '!**/dist/**'
 
 win:
   target:

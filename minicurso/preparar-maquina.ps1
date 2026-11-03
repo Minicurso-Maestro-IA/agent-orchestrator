@@ -75,6 +75,15 @@ if (-not $SemIA) {
   }
 }
 
+Passo "Copiando o projeto de exemplo para a pasta de trabalho"
+$exemplo = Join-Path $appDir 'projeto-exemplo'
+if (Test-Path $exemplo) {
+  Copy-Item -Recurse -Force (Join-Path $exemplo '*') $workspaceDir
+  Ok "projeto de exemplo em $workspaceDir"
+} else {
+  Aviso "projeto-exemplo nao veio no zip; copie a pasta minicurso\projeto-exemplo na mao"
+}
+
 Passo "Apontando o orquestrador para a pasta de trabalho do aluno"
 # Terminais novos nascem no workspace, e o observador de documentos vigia ele.
 # setx grava no perfil do usuário: vale para toda sessão futura, não para esta.
