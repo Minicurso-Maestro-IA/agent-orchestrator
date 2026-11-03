@@ -7,6 +7,7 @@ import {
   TerminalExitEvent,
   TerminalActivityEvent,
   AgentSpawnEvent,
+  TraceEvent,
   SkillInfo,
   AgentDefinition,
   PipelineStatusEvent,
@@ -73,6 +74,15 @@ const orchestratorAPI: OrchestratorAPI = {
     ipcRenderer.on('terminal:activity', listener)
     return () => {
       ipcRenderer.removeListener('terminal:activity', listener)
+    }
+  },
+  onTrace: (callback: (event: TraceEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: TraceEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('terminal:trace', listener)
+    return () => {
+      ipcRenderer.removeListener('terminal:trace', listener)
     }
   },
   onAgentSpawn: (callback: (event: AgentSpawnEvent) => void): (() => void) => {

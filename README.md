@@ -418,6 +418,42 @@ usuário, que um agente mexa naqueles arquivos. **A cada máquina, rode uma vez 
 cada CLI que a turma vai usar, na pasta de trabalho**, e deixe o primeiro uso
 resolvido antes da aula. É o que `minicurso/preparar-maquina.ps1` instrui no fim.
 
+### Ver o que a IA está fazendo: o rastro de ações
+
+O terminal já mostra o trabalho do agente — mas em prosa, no meio da resposta e
+rolando para fora da tela. Numa sala de aula isso não serve: o aluno precisa bater
+o olho no nó e entender em dois segundos o que aquela IA está fazendo.
+
+O hook `PostToolUse` resolve isso. Cada ferramenta que o agente usa vira uma linha
+numa faixa entre o cabeçalho e o terminal:
+
+```
+▸ leu cobranca.js                                        7 ações
+```
+
+Clicando, a faixa abre e mostra as últimas 8 ações, da mais recente para a mais
+antiga, com um ícone por tipo — ler, escrever, rodar comando, buscar. O verbo vem
+em português, porque `Read` não diz nada para quem está aprendendo.
+
+Com dois ou três nós no canvas, dá para ver ao mesmo tempo quem está lendo, quem
+está escrevendo e quem está rodando teste. É isso que torna a orquestração
+observável em vez de mágica.
+
+O rastro é gravado por `hooks/claude-trace.cjs` como uma linha JSON por ação, em
+`ORCHESTRATOR_TRACE_FILE`. O app lê só o que chegou desde a última leitura, por
+posição de byte: um agente que roda uma hora gera um arquivo grande, e reprocessá-lo
+duas vezes por segundo seria desperdício. Linha incompleta fica para o ciclo
+seguinte, pelo mesmo motivo do arquivo de status.
+
+**Limite honesto:** depende de hooks, então hoje só funciona com o **Claude Code**.
+Com o Antigravity a faixa fica vazia — é falta de recurso na CLI, não bug do app.
+
+### Fluxos de teste
+
+`minicurso/fluxos-de-teste.md` traz nove fluxos, do terminal puro ao pipeline de
+dois agentes, cada um isolando uma peça, com o que esperar e o que anotar quando
+falhar. Os fluxos 5 a 7 servem também como exercício da turma.
+
 ---
 
 ## 📄 Nós de documento e grupos

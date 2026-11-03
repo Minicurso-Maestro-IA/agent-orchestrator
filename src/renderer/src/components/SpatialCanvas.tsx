@@ -32,6 +32,7 @@ export function SpatialCanvas(): ReactElement {
   const handleDocumentEvent = useTerminalStore((s) => s.handleDocumentEvent)
   const handleAgentSpawn = useTerminalStore((s) => s.handleAgentSpawn)
   const setTerminalActivity = useTerminalStore((s) => s.setTerminalActivity)
+  const handleTrace = useTerminalStore((s) => s.handleTrace)
 
   const nodeTypes = useMemo(
     () => ({
@@ -79,6 +80,14 @@ export function SpatialCanvas(): ReactElement {
       handleAgentSpawn(event)
     })
   }, [handleAgentSpawn])
+
+  // Cada ferramenta que o agente usa vira uma linha no nó.
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onTrace((event) => {
+      handleTrace(event)
+    })
+  }, [handleTrace])
 
   // Inicialização: carregar catálogo de skills/agentes e criar 1 terminal de boas-vindas
   useEffect(() => {

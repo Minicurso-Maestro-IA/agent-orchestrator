@@ -4,6 +4,7 @@ import { listSkills } from '../core/skill-registry'
 import { listAgents } from '../core/agent-registry'
 import { pipelineWatcher } from '../core/pipeline-watcher'
 import { documentWatcher, readDocument, writeDocument } from '../core/document-watcher'
+import { traceWatcher } from '../core/trace-watcher'
 import * as path from 'path'
 import {
   TerminalSpawnOptions,
@@ -12,7 +13,8 @@ import {
   TerminalActivityEvent,
   PipelineStatusEvent,
   AgentSpawnEvent,
-  DocumentEvent
+  DocumentEvent,
+  TraceEvent
 } from '@shared/types'
 
 export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): void {
@@ -108,4 +110,12 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     }
   })
   documentWatcher.start()
+
+  traceWatcher.on('trace', (event: TraceEvent) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('terminal:trace', event)
+    }
+  })
+  traceWatcher.start()
 }

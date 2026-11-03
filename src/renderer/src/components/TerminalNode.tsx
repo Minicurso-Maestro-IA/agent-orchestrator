@@ -1,9 +1,27 @@
-import { useEffect, useRef, memo, type ReactElement } from 'react'
+import { useEffect, useRef, useState, memo, type ReactElement } from 'react'
 import { Handle, Position, NodeProps, Node, NodeResizeControl, NodeResizer } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { Terminal as TerminalIcon, X, Sparkles, BookOpen } from 'lucide-react'
-import { TerminalNodeData, TerminalDataEvent, TerminalExitEvent } from '@shared/types'
+import {
+  Terminal as TerminalIcon,
+  X,
+  Sparkles,
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  FilePen,
+  SquareTerminal,
+  Search,
+  Globe,
+  Wrench
+} from 'lucide-react'
+import {
+  TerminalNodeData,
+  TerminalDataEvent,
+  TerminalExitEvent,
+  TraceEvent
+} from '@shared/types'
 import { useTerminalStore } from '../store/terminalStore'
 
 /**
@@ -67,6 +85,39 @@ const ACTIVITY_STYLES = {
   }
 } as const
 
+/**
+ * Um ícone por tipo de ação. Ler é diferente de escrever é diferente de rodar
+ * comando: numa sala, a forma é reconhecida antes do texto.
+ */
+const TRACE_ICONS: Record<string, typeof Wrench> = {
+  Read: FileText,
+  Write: FilePen,
+  Edit: FilePen,
+  MultiEdit: FilePen,
+  NotebookEdit: FilePen,
+  Bash: SquareTerminal,
+  Glob: Search,
+  Grep: Search,
+  WebFetch: Globe,
+  WebSearch: Globe
+}
+
+/** Verbo em português para a ação, porque "Read" não diz nada para a turma. */
+const TRACE_VERBS: Record<string, string> = {
+  Read: 'leu',
+  Write: 'escreveu',
+  Edit: 'editou',
+  MultiEdit: 'editou',
+  NotebookEdit: 'editou',
+  Bash: 'rodou',
+  Glob: 'buscou',
+  Grep: 'procurou',
+  WebFetch: 'acessou',
+  WebSearch: 'pesquisou',
+  Task: 'delegou',
+  TodoWrite: 'planejou'
+}
+
 function TerminalNodeComponent({
   id,
   data,
@@ -81,6 +132,10 @@ function TerminalNodeComponent({
 
   const activityDot =
     ACTIVITY_STYLES[!data.active ? 'stopped' : data.activity ?? 'idle'] ?? ACTIVITY_STYLES.idle
+
+  const [traceAberto, setTraceAberto] = useState(false)
+  const trace = data.trace ?? []
+  const ultima = trace[0]
 
   useEffect(() => {
     if (!terminalContainerRef.current) return
@@ -279,11 +334,64 @@ function TerminalNodeComponent({
         </div>
       </div>
 
+      {ultima && (
+        <div className="nodrag flex-shrink-0 bg-slate-900/80 border-b border-slate-700/80 text-[11px]">
+          <button
+            onClick={() => setTraceAberto((v) => !v)}
+            className="w-full flex items-center gap-1.5 px-3 py-1 text-left hover:bg-slate-800/60 transition-colors"
+            title={traceAberto ? 'Recolher as ações' : 'Ver as últimas ações'}
+          >
+            {traceAberto ? (
+              <ChevronDown className="w-3 h-3 text-slate-400 flex-shrink-0" />
+            ) : (
+              <ChevronRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+            )}
+            <TraceLinha evento={ultima} />
+            <span className="ml-auto text-[10px] text-slate-500 font-mono flex-shrink-0">
+              {data.traceCount ?? trace.length} ações
+            </span>
+          </button>
+
+          {traceAberto && trace.length > 1 && (
+            <ul className="px-3 pb-1.5 pt-0.5 space-y-0.5 border-t border-slate-800">
+              {trace.slice(1).map((evento) => (
+                <li key={`${evento.at}-${evento.tool}-${evento.label}`} className="flex pl-4">
+                  <TraceLinha evento={evento} esmaecido />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <div
         ref={terminalContainerRef}
         className="nodrag nowheel flex-1 w-full min-h-0 bg-[#131c2e] p-2 overflow-hidden cursor-text"
       />
     </div>
+  )
+}
+
+/** "leu api.ts", "rodou npm test": o que o agente acabou de fazer, em uma linha. */
+function TraceLinha({
+  evento,
+  esmaecido
+}: {
+  evento: TraceEvent
+  esmaecido?: boolean
+}): ReactElement {
+  const Icone = TRACE_ICONS[evento.tool] ?? Wrench
+  const verbo = TRACE_VERBS[evento.tool] ?? evento.tool
+  return (
+    <span
+      className={`flex items-center gap-1.5 min-w-0 ${esmaecido ? 'text-slate-500' : 'text-slate-300'}`}
+    >
+      <Icone className="w-3 h-3 flex-shrink-0 text-slate-400" />
+      <span className="flex-shrink-0">{verbo}</span>
+      {evento.label && (
+        <code className="truncate font-mono text-[10px] text-sky-300/90">{evento.label}</code>
+      )}
+    </span>
   )
 }
 

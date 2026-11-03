@@ -20,6 +20,7 @@ import {
   PipelineStatusEvent,
   TerminalActivity,
   AgentSpawnEvent,
+  TraceEvent,
   DocumentNodeData,
   DocumentEvent,
   GroupNodeData
@@ -71,6 +72,11 @@ const MAX_HOPS = 20
  * humano continua criando nós à mão sem restrição.
  */
 const MAX_SPAWNS = 8
+/**
+ * Ações guardadas por nó. O suficiente para a turma ver a sequência do que a IA
+ * fez, sem manter na memória o histórico inteiro de um agente que roda uma hora.
+ */
+const MAX_TRACE = 8
 
 export function edgeVisuals(condition: EdgeCondition): Record<string, unknown> {
   const color = CONDITION_COLORS[condition]
@@ -109,6 +115,7 @@ interface TerminalState {
   handlePipelineStatus: (event: PipelineStatusEvent) => Promise<void>
   handleAgentSpawn: (event: AgentSpawnEvent) => Promise<void>
   setTerminalActivity: (id: string, activity: TerminalActivity) => void
+  handleTrace: (event: TraceEvent) => void
   handleDocumentEvent: (event: DocumentEvent) => void
   createDocumentNode: (name: string) => Promise<void>
   createGroup: () => void
@@ -524,6 +531,24 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       console.error('[TerminalStore] Failed to spawn terminal:', err)
       return null
     }
+  },
+
+  /** Uma ação do agente chegou: entra no topo da lista do nó. */
+  handleTrace: (event: TraceEvent) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) => {
+        if (!isTerminal(node) || node.id !== event.terminalId) return node
+        const anteriores = node.data.trace ?? []
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            trace: [event, ...anteriores].slice(0, MAX_TRACE),
+            traceCount: (node.data.traceCount ?? 0) + 1
+          }
+        } as TerminalFlowNode
+      })
+    }))
   },
 
   setTerminalActivity: (id: string, activity: TerminalActivity) => {

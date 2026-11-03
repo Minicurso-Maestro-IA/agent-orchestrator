@@ -91,6 +91,20 @@ export interface TerminalActivityEvent {
   since: number
 }
 
+/**
+ * Uma ação do agente, vinda do hook PostToolUse. É o que torna o trabalho da IA
+ * visível de longe: "leu api.ts", "rodou npm test", em vez de prosa rolando.
+ */
+export interface TraceEvent {
+  terminalId: string
+  /** Nome da ferramenta: Read, Write, Bash, Grep... */
+  tool: string
+  /** Alvo resumido: nome do arquivo, comando, padrão de busca. Pode vir vazio. */
+  label: string
+  at: number
+  ms?: number
+}
+
 export interface TerminalDataEvent {
   id: string
   data: string
@@ -119,6 +133,7 @@ export interface OrchestratorAPI {
   onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
   onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
   onTerminalActivity: (callback: (event: TerminalActivityEvent) => void) => () => void
+  onTrace: (callback: (event: TraceEvent) => void) => () => void
   onAgentSpawn: (callback: (event: AgentSpawnEvent) => void) => () => void
   onPipelineStatus: (callback: (event: PipelineStatusEvent) => void) => () => void
   onDocument: (callback: (event: DocumentEvent) => void) => () => void
@@ -203,4 +218,8 @@ export interface TerminalNodeData extends Record<string, unknown> {
   activity?: TerminalActivity
   /** Marca os nós que um agente criou, para distinguir do que o humano desenhou. */
   spawnedBy?: string
+  /** Últimas ações do agente, as mais recentes primeiro. */
+  trace?: TraceEvent[]
+  /** Total de ações desde o início, que não cabe em `trace`. */
+  traceCount?: number
 }

@@ -20,6 +20,7 @@ import { findSkill, readSkillBody } from './skill-registry'
 import type { SkillInfo } from '@shared/types'
 import { pipelineWatcher } from './pipeline-watcher'
 import { clearClaudeSettings, writeClaudeSettings } from './claude-hooks'
+import { traceWatcher } from './trace-watcher'
 import { documentWatcher } from './document-watcher'
 
 interface ActivePtySession {
@@ -109,7 +110,9 @@ export class PtyManager extends EventEmitter {
       // Onde o agente anuncia um documento, ou pede a criação de outro agente.
       ORCHESTRATOR_EVENTS_DIR: documentWatcher.announceDirFor(),
       // O agente precisa saber quem ele é para pedir um agente ligado a si mesmo.
-      ORCHESTRATOR_TERMINAL_ID: id
+      ORCHESTRATOR_TERMINAL_ID: id,
+      // Onde o hook de ferramenta grava o rastro que aparece no nó.
+      ORCHESTRATOR_TRACE_FILE: traceWatcher.traceFileFor(id)
     } as Record<string, string>
 
     const ptyProcess = pty.spawn(file, args, {
@@ -429,6 +432,7 @@ export class PtyManager extends EventEmitter {
       pipelineWatcher.clear(id)
       this.clearPromptFile(id)
       clearClaudeSettings(id)
+      traceWatcher.clear(id)
       return true
     }
     return false

@@ -19,19 +19,20 @@ import { app } from 'electron'
  * configuração global de quem o instalou.
  */
 
-const HOOK_FILE = 'claude-stop.cjs'
+const HOOK_STOP = 'claude-stop.cjs'
+const HOOK_TRACE = 'claude-trace.cjs'
 
 /** Mesma ordem de busca do skill-registry: projeto, app empacotado, lado do exe. */
-function candidateScripts(): string[] {
+function candidateScripts(nome: string): string[] {
   return [
-    path.join(process.cwd(), 'hooks', HOOK_FILE),
-    path.join(app.getAppPath(), 'hooks', HOOK_FILE),
-    path.join(path.dirname(app.getPath('exe')), 'hooks', HOOK_FILE)
+    path.join(process.cwd(), 'hooks', nome),
+    path.join(app.getAppPath(), 'hooks', nome),
+    path.join(path.dirname(app.getPath('exe')), 'hooks', nome)
   ]
 }
 
-export function resolveHookScript(): string | null {
-  for (const file of candidateScripts()) {
+export function resolveHookScript(nome = HOOK_STOP): string | null {
+  for (const file of candidateScripts(nome)) {
     try {
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return file
     } catch {
@@ -47,11 +48,13 @@ export function resolveHookScript(): string | null {
  * pipeline volta a depender de o agente gravar o status por conta própria.
  */
 export function writeClaudeSettings(terminalId: string): string | null {
-  const script = resolveHookScript()
+  const script = resolveHookScript(HOOK_STOP)
   if (!script) {
-    console.warn(`[ClaudeHooks] ${HOOK_FILE} não encontrado; o agente sobe sem o hook de status.`)
+    console.warn(`[ClaudeHooks] ${HOOK_STOP} não encontrado; o agente sobe sem o hook de status.`)
     return null
   }
+  // O rastro é opcional: sem ele o pipeline funciona, só o nó fica menos legível.
+  const trace = resolveHookScript(HOOK_TRACE)
 
   try {
     const dir = path.join(app.getPath('userData'), 'claude-sessions')
@@ -60,7 +63,9 @@ export function writeClaudeSettings(terminalId: string): string | null {
 
     // O hook herda o ambiente do PTY, que já carrega ORCHESTRATOR_STATUS_FILE:
     // é assim que o script sabe onde gravar, sem precisar de argumento.
-    const settings = {
+    const settings: {
+      hooks: Record<string, unknown[]>
+    } = {
       hooks: {
         Stop: [
           {
@@ -74,6 +79,21 @@ export function writeClaudeSettings(terminalId: string): string | null {
           }
         ]
       }
+    }
+
+    if (trace) {
+      settings.hooks.PostToolUse = [
+        {
+          matcher: '*',
+          hooks: [
+            {
+              type: 'command',
+              command: `node ${JSON.stringify(trace)}`,
+              timeout: 10
+            }
+          ]
+        }
+      ]
     }
 
     fs.writeFileSync(file, JSON.stringify(settings, null, 2), 'utf8')
