@@ -143,7 +143,38 @@ async function main() {
     console.log(`     ${String(qtd).padStart(6)}  ${pasta}`)
   }
 
-  console.log('\n4. Checagem de segurança')
+  console.log('\n4. Subprojetos com git próprio')
+  // Uma pasta que já é repositório git entra no índice como ponteiro de
+  // submódulo (modo 160000), e não como os arquivos dela. O push sobe um
+  // repositório sem uma linha de código, e a contagem de arquivos não denuncia:
+  // cada subprojeto aparece como 1.
+  const indice = git(['ls-files', '-s'], projeto).out
+  const submodulos = indice
+    .split('\n')
+    .filter((l) => l.startsWith('160000'))
+    .map((l) => l.split('\t')[1])
+    .filter(Boolean)
+
+  if (submodulos.length > 0) {
+    console.error('\n✖ ABORTADO: estas pastas já são repositórios git próprios:\n')
+    for (const s of submodulos) console.error(`     ${s}`)
+    console.error(
+      '\n  O git registra cada uma como um ponteiro, não como os arquivos dentro dela.' +
+        '\n  Enviar assim produz um repositório sem nenhuma linha de código.' +
+        '\n' +
+        '\n  Duas saídas:' +
+        '\n    1. rode este script uma vez para CADA subprojeto, com uma URL de repositório' +
+        '\n       diferente em cada — aí cada um vira um repositório de verdade;' +
+        '\n    2. ou, se o objetivo é só me passar o código para leitura, zipe as pastas' +
+        '\n       `src` e anexe no chat: não mexe na estrutura que já existe.' +
+        '\n' +
+        '\n  Nada foi commitado nem enviado.'
+    )
+    process.exit(2)
+  }
+  console.log('  nenhum: todas as pastas entram como arquivos')
+
+  console.log('\n5. Checagem de segurança')
   const suspeitos = arquivos.filter((a) => PADRAO_SEGREDO.test(a))
 
   if (suspeitos.length > 0) {
@@ -183,7 +214,7 @@ async function main() {
 
 /** Commit (quando há o que commitar), remote e push, com erro explicado. */
 async function enviar(projeto, repo, semNovidade, jaTemCommit = true) {
-  console.log('\n5. Enviando')
+  console.log('\n6. Enviando')
 
   if (!semNovidade) {
     gitOuFalha(
