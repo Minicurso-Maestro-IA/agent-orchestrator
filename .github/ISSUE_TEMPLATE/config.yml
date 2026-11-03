@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Como escrever uma tarefa
+    url: https://github.com/Minicurso-Maestro-IA/agent-orchestrator/blob/claude/empacotar-exe-minicurso/minicurso/COMO-ESCREVER-UMA-TAREFA.md
+    about: O modelo explicado, com os erros mais comuns
+  - name: Como executar uma tarefa
+    url: https://github.com/Minicurso-Maestro-IA/agent-orchestrator/blob/claude/empacotar-exe-minicurso/minicurso/COMO-FAZER-UMA-TAREFA.md
+    about: O caminho do card, do Backlog ao Done
