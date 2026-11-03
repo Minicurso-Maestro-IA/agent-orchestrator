@@ -16,7 +16,17 @@ import { fileURLToPath } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const ORIGEM_FORK = path.join(AQUI, 'fork-virta', 'front', 'src')
+const ORIGEM_FORK_BACK = path.join(AQUI, 'fork-virta', 'back')
 const DESTINO_PADRAO = 'C:\\minicurso\\workspace\\virta-front-end'
+
+/** Arquivo do backend com defeito, e a marca que prova que entrou. */
+const ARQUIVOS_BACK = [
+  {
+    rel: path.join('src', 'main', 'java', 'br', 'com', 'virta', 'backend', 'service', 'TransactionService.java'),
+    marca: '!categoryIds.contains(t.getCategory().getId())',
+    defeito: 'filtro de tipo ignorado e filtro de categoria invertido'
+  }
+]
 
 /** Cada arquivo e a marca que prova que o defeito entrou. */
 const ARQUIVOS = [
@@ -60,8 +70,14 @@ function copiar(de, para) {
 }
 
 function main() {
-  const virta = process.argv[2]
-  const destino = process.argv[3] || DESTINO_PADRAO
+  // --back <pasta> é opcional: o backend do virta é um projeto à parte.
+  const args = process.argv.slice(2)
+  const iBack = args.indexOf('--back')
+  const virtaBack = iBack >= 0 ? args[iBack + 1] : null
+  if (iBack >= 0) args.splice(iBack, 2)
+
+  const virta = args[0]
+  const destino = args[1] || DESTINO_PADRAO
 
   if (!virta) {
     console.error('Uso: node montar-fork-virta.mjs <pasta-do-virta-front-end> [destino]')
@@ -115,6 +131,41 @@ function main() {
     }
   }
   if (falhou) process.exit(1)
+
+  if (virtaBack) {
+    passo('Backend')
+    if (!fs.existsSync(path.join(virtaBack, 'src'))) {
+      console.error(`✖ Não parece o virta-back-end: não achei "src" em ${virtaBack}`)
+      process.exit(1)
+    }
+    // Irmão do destino do front: assim um destino customizado leva o backend junto,
+    // em vez de o backend cair sempre no caminho fixo.
+    const destinoBack = path.join(path.dirname(path.resolve(destino)), 'virta-back-end')
+    if (path.resolve(virtaBack) === path.resolve(destinoBack)) {
+      console.error('✖ Origem e destino do backend são a mesma pasta.')
+      process.exit(1)
+    }
+    fs.mkdirSync(destinoBack, { recursive: true })
+    ok(`${copiar(virtaBack, destinoBack)} arquivos copiados para ${destinoBack}`)
+
+    for (const { rel, marca, defeito } of ARQUIVOS_BACK) {
+      const de = path.join(ORIGEM_FORK_BACK, rel)
+      const para = path.join(destinoBack, rel)
+      if (!fs.existsSync(de)) {
+        console.error(`✖ Faltando no repositório: ${de}`)
+        process.exit(1)
+      }
+      fs.mkdirSync(path.dirname(para), { recursive: true })
+      fs.copyFileSync(de, para)
+      if (!fs.readFileSync(para, 'utf8').includes(marca)) {
+        console.error(`    ✖ ${rel}: não encontrei a marca do defeito`)
+        process.exit(1)
+      }
+      ok(`${path.basename(rel)}  —  ${defeito}`)
+    }
+  } else {
+    console.log('\n(backend não foi montado; passe --back <pasta-do-virta-back-end> para incluí-lo)')
+  }
 
   console.log(`
 ------------------------------------------------------------
