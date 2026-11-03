@@ -12,6 +12,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
@@ -72,6 +73,12 @@ function copiar(de, para) {
 function main() {
   // --back <pasta> é opcional: o backend do virta é um projeto à parte.
   const args = process.argv.slice(2)
+  // --build roda npm install e npm run build na pasta certa, para ninguém
+  // precisar acertar um `cd` antes.
+  const iBuild = args.indexOf('--build')
+  const comBuild = iBuild >= 0
+  if (comBuild) args.splice(iBuild, 1)
+
   const iBack = args.indexOf('--back')
   const virtaBack = iBack >= 0 ? args[iBack + 1] : null
   if (iBack >= 0) args.splice(iBack, 2)
@@ -165,6 +172,34 @@ function main() {
     }
   } else {
     console.log('\n(backend não foi montado; passe --back <pasta-do-virta-back-end> para incluí-lo)')
+  }
+
+  if (comBuild) {
+    passo('Instalando dependências do front (pode levar alguns minutos)')
+    const instalar = spawnSync('npm', ['install', '--no-audit', '--no-fund'], {
+      cwd: destino,
+      stdio: 'inherit',
+      shell: true
+    })
+    if (instalar.status !== 0) {
+      console.error('\n✖ npm install falhou. A saída acima diz o motivo.')
+      process.exit(1)
+    }
+
+    passo('Compilando o front (é este passo que valida os defeitos plantados)')
+    const build = spawnSync('npm', ['run', 'build'], {
+      cwd: destino,
+      stdio: 'inherit',
+      shell: true
+    })
+    if (build.status !== 0) {
+      console.error(
+        '\n✖ O build falhou. Mande a saída acima: os defeitos são edições de' +
+          '\n  uma ou duas linhas e o conserto é rápido.'
+      )
+      process.exit(1)
+    }
+    console.log('\n✓ Build passou. O fork está pronto.')
   }
 
   console.log(`
