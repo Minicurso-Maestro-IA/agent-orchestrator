@@ -335,7 +335,7 @@ function TerminalNodeComponent({
       </div>
 
       {ultima && (
-        <div className="nodrag flex-shrink-0 bg-slate-900/80 border-b border-slate-700/80 text-[11px]">
+        <div className="nodrag flex-shrink-0 bg-slate-900/80 border-b border-slate-700/80 text-[13px]">
           <button
             onClick={() => setTraceAberto((v) => !v)}
             className="w-full flex items-center gap-1.5 px-3 py-1 text-left hover:bg-slate-800/60 transition-colors"
@@ -347,13 +347,13 @@ function TerminalNodeComponent({
               <ChevronRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
             )}
             <TraceLinha evento={ultima} />
-            <span className="ml-auto text-[10px] text-slate-500 font-mono flex-shrink-0">
+            <span className="ml-auto text-[11px] text-slate-400 font-mono flex-shrink-0">
               {data.traceCount ?? trace.length} ações
             </span>
           </button>
 
           {traceAberto && trace.length > 1 && (
-            <ul className="px-3 pb-1.5 pt-0.5 space-y-0.5 border-t border-slate-800">
+            <ul className="px-3 pb-2 pt-1 space-y-1 border-t border-slate-800">
               {trace.slice(1).map((evento) => (
                 <li key={`${evento.at}-${evento.tool}-${evento.label}`} className="flex pl-4">
                   <TraceLinha evento={evento} esmaecido />
@@ -384,12 +384,12 @@ function TraceLinha({
   const verbo = TRACE_VERBS[evento.tool] ?? evento.tool
   return (
     <span
-      className={`flex items-center gap-1.5 min-w-0 ${esmaecido ? 'text-slate-500' : 'text-slate-300'}`}
+      className={`flex items-center gap-1.5 min-w-0 ${esmaecido ? 'text-slate-400' : 'text-slate-200'}`}
     >
-      <Icone className="w-3 h-3 flex-shrink-0 text-slate-400" />
+      <Icone className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
       <span className="flex-shrink-0">{verbo}</span>
       {evento.label && (
-        <code className="truncate font-mono text-[10px] text-sky-300/90">{evento.label}</code>
+        <code className="truncate font-mono text-[12px] text-sky-300">{evento.label}</code>
       )}
     </span>
   )
