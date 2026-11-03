@@ -26,3 +26,7 @@ pnpm-debug.log*
 release/
 yarn-debug.log*
 yarn-error.log*
+
+# Caminho do Windows usado fora do Windows vira pasta com barra invertida no
+# nome. O git aceita, e depois nenhum clone em Windows consegue escrever.
+C:\\*

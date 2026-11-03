@@ -103,6 +103,24 @@ function main() {
     process.exit(1)
   }
 
+  // Um caminho do Windows usado fora do Windows cria uma pasta com barras
+  // invertidas no nome. Dentro de um repositório isso é pior que lixo: o git
+  // aceita o commit e depois nenhum clone em Windows consegue escrever o
+  // arquivo, travando o `git pull` de todo mundo.
+  const pareceCaminhoWindows = (p) => /^[A-Za-z]:[\\/]/.test(p) || p.includes('\\')
+  if (process.platform !== 'win32') {
+    for (const [rotulo, valor] of [['destino', destino], ['origem', virta]]) {
+      if (valor && pareceCaminhoWindows(valor)) {
+        console.error(
+          `✖ ${rotulo} parece um caminho do Windows ("${valor}"), mas isto não é Windows.` +
+            '\n  Fora do Windows isso vira uma pasta com barras invertidas no nome.' +
+            '\n  Passe um caminho desta plataforma.'
+        )
+        process.exit(1)
+      }
+    }
+  }
+
   console.log(`\nOrigem : ${virta}`)
   console.log(`Destino: ${destino}`)
 
