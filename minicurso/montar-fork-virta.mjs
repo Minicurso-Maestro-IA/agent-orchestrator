@@ -33,7 +33,7 @@ const ARQUIVOS_BACK = [
 const ARQUIVOS = [
   {
     rel: path.join('components', 'CategoryBadge.tsx'),
-    marca: '"#71717a" ?? color',
+    marca: 'color: fallback }',
     defeito: 'toda etiqueta de categoria cinza'
   },
   {
