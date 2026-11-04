@@ -11,7 +11,7 @@ export type SkillDelivery = 'paste' | 'arg'
 export interface AgentDefinition {
   id: string
   label: string
-  /** Executável chamado no shell. Ex: 'claude', 'gemini', 'codex'. */
+  /** Executável chamado no shell. Ex: 'claude', 'agy', 'codex'. */
   command: string
   /** Argumentos fixos, sempre passados. */
   args?: string[]

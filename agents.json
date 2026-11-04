@@ -13,14 +13,14 @@
       "install": "npm i -g @anthropic-ai/claude-code"
     },
     {
-      "id": "gemini",
-      "label": "Gemini CLI",
-      "command": "gemini",
+      "id": "antigravity",
+      "label": "Antigravity CLI",
+      "command": "agy",
       "args": [],
       "delivery": "paste",
       "readyDelayMs": 4000,
-      "description": "CLI do Google Gemini",
-      "install": "npm i -g @google/gemini-cli"
+      "description": "CLI do Google Antigravity",
+      "install": "npm i -g agy"
     },
     {
       "id": "codex",
