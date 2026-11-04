@@ -16,7 +16,7 @@
       "id": "antigravity",
       "label": "Antigravity CLI",
       "command": "agy",
-      "args": [],
+      "args": ["--mode", "auto", "--dangerously-skip-permissions"],
       "delivery": "paste",
       "readyDelayMs": 4000,
       "description": "CLI do Google Antigravity",

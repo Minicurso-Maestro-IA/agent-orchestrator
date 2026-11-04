@@ -19,7 +19,7 @@ import { useTerminalStore, EDGE_DEFAULTS } from '../store/terminalStore'
 
 export function SpatialCanvas(): ReactElement {
   const initializedRef = useRef(false)
-  const { fitView } = useReactFlow()
+  const { fitView, zoomIn, zoomOut } = useReactFlow()
 
   const nodes = useTerminalStore((s) => s.nodes)
   const edges = useTerminalStore((s) => s.edges)
@@ -62,6 +62,42 @@ export function SpatialCanvas(): ReactElement {
       handleDocumentEvent(event)
     })
   }, [handleDocumentEvent])
+
+  // Atalhos de teclado: Ctrl + (zoom in) e Ctrl - (zoom out)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return
+
+      // Zoom In: Ctrl + Plus, Ctrl + '=', NumpadAdd
+      if (
+        event.key === '+' ||
+        event.key === '=' ||
+        event.code === 'Equal' ||
+        event.code === 'NumpadAdd'
+      ) {
+        event.preventDefault()
+        zoomIn({ duration: 200 })
+        return
+      }
+
+      // Zoom Out: Ctrl + Minus, Ctrl + '_', NumpadSubtract
+      if (
+        event.key === '-' ||
+        event.key === '_' ||
+        event.code === 'Minus' ||
+        event.code === 'NumpadSubtract'
+      ) {
+        event.preventDefault()
+        zoomOut({ duration: 200 })
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true })
+    }
+  }, [zoomIn, zoomOut])
 
   // Inicialização: carregar catálogo de skills/agentes e criar 1 terminal de boas-vindas
   useEffect(() => {

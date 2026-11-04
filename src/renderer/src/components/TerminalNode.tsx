@@ -74,6 +74,24 @@ function TerminalNodeComponent({
     const fitAddon = new FitAddon()
     term.loadAddon(fitAddon)
 
+    term.attachCustomKeyEventHandler((event) => {
+      // Permite que Ctrl + e Ctrl - passem para o SpatialCanvas realizar o zoom
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        (event.key === '+' ||
+          event.key === '=' ||
+          event.key === '-' ||
+          event.key === '_' ||
+          event.code === 'Equal' ||
+          event.code === 'Minus' ||
+          event.code === 'NumpadAdd' ||
+          event.code === 'NumpadSubtract')
+      ) {
+        return false
+      }
+      return true
+    })
+
     term.open(terminalContainerRef.current)
 
     xtermRef.current = term
