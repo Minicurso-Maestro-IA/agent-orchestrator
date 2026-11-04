@@ -45,9 +45,9 @@ export interface SpawnContext {
 }
 
 export const CONDITION_COLORS: Record<EdgeCondition, string> = {
-  always: '#38bdf8',
-  approved: '#34d399',
-  rejected: '#fb7185'
+  always: '#5B9BD5',
+  approved: '#62B58A',
+  rejected: '#D87979'
 }
 
 export const CONDITION_LABELS: Record<EdgeCondition, string> = {
@@ -62,8 +62,8 @@ const MAX_HOPS = 20
 export function edgeVisuals(condition: EdgeCondition): Record<string, unknown> {
   const color = CONDITION_COLORS[condition]
   return {
-    style: { stroke: color, strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color }
+    style: { stroke: color, strokeWidth: 1.5 },
+    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color }
   }
 }
 

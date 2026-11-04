@@ -81,53 +81,63 @@ export function SpatialCanvas(): ReactElement {
   }, [addTerminal, fitView, loadCatalog, nodes.length])
 
   return (
-    <div className="relative w-screen h-screen bg-[#0b1220] overflow-hidden select-none">
+    <div className="flex flex-col w-screen h-screen bg-[#0C0E12] overflow-hidden select-none">
       <TopBar />
       <NewTerminalModal />
 
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        // Loose: qualquer handle pode iniciar ou receber uma conexão, então dá
-        // para ligar os nós por cima, por baixo ou pelos lados.
-        connectionMode={ConnectionMode.Loose}
-        connectionLineType={ConnectionLineType.SmoothStep}
-        connectionLineStyle={{ stroke: '#38bdf8', strokeWidth: 2 }}
-        defaultEdgeOptions={EDGE_DEFAULTS}
-        fitView
-        minZoom={0.15}
-        maxZoom={2.5}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        proOptions={{ hideAttribution: true }}
-        className="agent-orchestrator-canvas"
-      >
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1.5}
-          color="#64748b"
-          className="opacity-70"
-        />
+      <div className="flex-1 w-full h-full relative min-h-0">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          // Loose: qualquer handle pode iniciar ou receber uma conexão, então dá
+          // para ligar os nós por cima, por baixo ou pelos lados.
+          connectionMode={ConnectionMode.Loose}
+          connectionLineType={ConnectionLineType.SmoothStep}
+          connectionLineStyle={{ stroke: '#5B9BD5', strokeWidth: 1.5 }}
+          defaultEdgeOptions={EDGE_DEFAULTS}
+          fitView
+          minZoom={0.15}
+          maxZoom={2.5}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          proOptions={{ hideAttribution: true }}
+          className="iflow-canvas"
+        >
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={20}
+            size={1}
+            color="#222732"
+            className="opacity-80"
+          />
 
-        <Controls
-          position="bottom-left"
-          className="!bg-slate-800/95 !border !border-slate-600 !rounded-xl !shadow-2xl !p-1 [&>button]:!bg-transparent [&>button]:!border-none [&>button]:!text-slate-200 hover:[&>button]:!text-white hover:[&>button]:!bg-slate-700 [&>button]:!rounded-lg transition-colors"
-        />
+          <Controls
+            position="bottom-left"
+            showInteractive={false}
+            className="!bg-[#171A20] !border !border-[#262B34] !rounded-md !p-0.5 !shadow-md [&>button]:!bg-transparent [&>button]:!border-none [&>button]:!text-[#A0A6B2] hover:[&>button]:!text-[#E6E8EC] hover:[&>button]:!bg-[#242933] [&>button]:!rounded [&>button]:!w-6 [&>button]:!h-6 transition-colors"
+          />
 
-        <MiniMap
-          position="bottom-right"
-          nodeColor="#38bdf8"
-          nodeStrokeColor="#0ea5e9"
-          nodeBorderRadius={6}
-          maskColor="rgba(15, 23, 42, 0.75)"
-          className="!bg-slate-800/95 !border !border-slate-600 !rounded-xl !shadow-2xl !overflow-hidden"
-        />
-      </ReactFlow>
+          <MiniMap
+            position="bottom-right"
+            nodeColor={(n) => {
+              if (n.type === 'document') return '#D6A45D'
+              if (n.type === 'group') return '#1D2129'
+              return '#303641'
+            }}
+            nodeStrokeColor={(n) => {
+              if (n.type === 'document') return '#D6A45D'
+              return '#5B9BD5'
+            }}
+            nodeBorderRadius={2}
+            maskColor="rgba(12, 14, 18, 0.75)"
+            className="!bg-[#14171D] !border !border-[#262B34] !rounded-md !shadow-md !overflow-hidden !w-36 !h-24"
+          />
+        </ReactFlow>
+      </div>
     </div>
   )
 }

@@ -184,7 +184,7 @@ export class PtyManager extends EventEmitter {
       '### Mostrando um documento no canvas',
       '',
       'Se abrir um .md relevante (uma regra, uma especificação, um checklist) e quiser',
-      'que ele apareça no orquestrador, grave um JSON de nome único nesta pasta:',
+      'que ele apareça no iFlow, grave um JSON de nome único nesta pasta:',
       '',
       documentWatcher.announceDirFor(),
       '',

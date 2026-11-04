@@ -1,5 +1,5 @@
 {
-  "name": "agent-orchestrator",
+  "name": "iflow",
   "version": "1.0.0",
   "description": "Spatial 2D Canvas workspace running terminals and AI agents",
   "main": "./out/main/index.js",
@@ -37,26 +37,45 @@
     "vite": "^6.2.0"
   },
   "build": {
-    "appId": "com.minicurso.agent-orchestrator",
-    "productName": "Agent Orchestrator",
+    "appId": "com.minicurso.iflow",
+    "productName": "iFlow",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
+    "icon": "resources/icon.png",
     "files": [
       "out/**",
       "agents.json",
       "skills/**",
+      "resources/**",
       "package.json"
     ],
     "asar": false,
     "npmRebuild": false,
     "win": {
+      "icon": "resources/icon.ico",
       "target": [
         "portable",
         "dir"
       ],
-      "artifactName": "${productName}-${version}-portable.${ext}",
-      "signAndEditExecutable": false
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    },
+    "nsis": {
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico"
+    },
+    "mac": {
+      "icon": "resources/icon.icns",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "icon": "resources/icons",
+      "category": "Development",
+      "desktop": {
+        "Name": "iFlow",
+        "Comment": "Spatial 2D Canvas workspace running terminals and AI agents"
+      }
     }
   }
 }

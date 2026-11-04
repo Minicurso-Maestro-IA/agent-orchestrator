@@ -9,8 +9,8 @@ import { EdgeCondition } from '@shared/types'
 import { CONDITION_COLORS, CONDITION_LABELS, useTerminalStore } from '../store/terminalStore'
 
 /**
- * Aresta do pipeline. O rótulo mostra em qual veredito ela dispara e cicla
- * entre sempre → aprovado → reprovado a cada clique.
+ * Aresta do pipeline: traço fino e preciso, rótulo compacto com fundo neutro
+ * e indicador funcional sem interferência luminosa.
  */
 export function ConditionEdge({
   id,
@@ -37,7 +37,7 @@ export function ConditionEdge({
     targetY,
     sourcePosition,
     targetPosition,
-    borderRadius: 12
+    borderRadius: 8
   })
 
   return (
@@ -67,19 +67,11 @@ export function ConditionEdge({
             pointerEvents: 'all'
           }}
         >
-          {/* Tag com feedback visual de brilho e luminosidade, sem alteração geométrica que cause jitter */}
-          <span
-            className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border shadow-lg transition-all duration-200 ease-out group-hover:brightness-125 group-hover:bg-slate-800/95"
-            style={{
-              background: '#0f172a',
-              borderColor: color,
-              color,
-              boxShadow: `0 0 10px ${color}25, 0 2px 6px rgba(0,0,0,0.5)`
-            }}
-          >
+          {/* Label compacta com fundo neutro e indicação funcional */}
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono tracking-wide border border-[#262B34] bg-[#171A20] text-[#A0A6B2] shadow-sm transition-colors duration-140 group-hover:border-[#303641] group-hover:text-[#E6E8EC]">
             <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
-              style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: color }}
             />
             {CONDITION_LABELS[condition]}
           </span>
