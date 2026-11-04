@@ -1,8 +1,8 @@
 # Empacotamento para a sala de aula: um zip com o exe, o agents.json e as skills
 # lado a lado, do jeito que o skill-registry e o agent-registry já procuram
 # (path.dirname(app.getPath('exe'))). Sem instalador, para rodar sem admin.
-appId: com.minicurso.agentorchestrator
-productName: Agent Orchestrator
+appId: com.minicurso.iflow
+productName: IFlow
 
 # node-pty 1.1.0 é addon Node-API e publica binários prontos para win32-x64, então
 # não há nada para recompilar — e é isso que permite montar o zip de Windows numa

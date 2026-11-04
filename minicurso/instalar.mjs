@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url))
-const EXE = 'Agent Orchestrator.exe'
+const EXE = 'IFlow.exe'
 
 const passo = (t) => console.log(`\n==> ${t}`)
 const ok = (t) => console.log(`    OK  ${t}`)
@@ -45,13 +45,13 @@ function criarAtalho(exe, trabalho) {
   const desktop = path.join(os.homedir(), 'Desktop')
   if (!fs.existsSync(desktop)) return aviso('área de trabalho não encontrada; crie o atalho na mão')
 
-  const lnk = path.join(desktop, 'Orquestrador.lnk')
+  const lnk = path.join(desktop, 'IFlow.lnk')
   const ps = [
     '$s = New-Object -ComObject WScript.Shell',
     `$a = $s.CreateShortcut(${JSON.stringify(lnk)})`,
     `$a.TargetPath = ${JSON.stringify(exe)}`,
     `$a.WorkingDirectory = ${JSON.stringify(trabalho)}`,
-    "$a.Description = 'Orquestrador de agentes de IA - minicurso'",
+    "$a.Description = 'IFlow - orquestrador de agentes de IA'",
     '$a.Save()'
   ].join('; ')
 
@@ -75,7 +75,7 @@ function main() {
   const base = ehWindows ? 'C:\\minicurso' : path.join(os.homedir(), 'minicurso')
   const trabalho = path.join(base, 'workspace')
 
-  console.log(`\nOrquestrador: ${AQUI}`)
+  console.log(`\nIFlow: ${AQUI}`)
   console.log(`Pasta de trabalho: ${trabalho}`)
 
   passo('Criando a pasta de trabalho')
@@ -127,7 +127,7 @@ Máquina pronta. Falta o que só dá para fazer na mão:
      lê o prompt inicial, não termina turno, e o orquestrador não roteia
      nada — parecendo um defeito do app.
 
-  4. Abra o atalho "Orquestrador" na área de trabalho.
+  4. Abra o atalho "IFlow" na área de trabalho.
      No primeiro clique o Windows avisa que o autor é desconhecido
      (o executável não é assinado): Mais informações > Executar assim mesmo.
 

@@ -45,8 +45,8 @@ if (Test-Path $appDir) {
   Aviso "instalação anterior removida"
 }
 Expand-Archive -Path $Zip -DestinationPath $appDir -Force
-$exe = Join-Path $appDir 'Agent Orchestrator.exe'
-if (-not (Test-Path $exe)) { throw "O zip não tem 'Agent Orchestrator.exe' na raiz. Zip errado?" }
+$exe = Join-Path $appDir 'IFlow.exe'
+if (-not (Test-Path $exe)) { throw "O zip não tem 'IFlow.exe' na raiz. Zip errado?" }
 Ok (Split-Path $exe -Leaf)
 
 # O app procura agents.json e skills/ ao lado do exe. Se não estiverem, o seletor
@@ -92,12 +92,12 @@ setx AGENT_ORCHESTRATOR_WATCH_DIR    $workspaceDir | Out-Null
 Ok "AGENT_ORCHESTRATOR_TERMINAL_CWD e _WATCH_DIR = $workspaceDir"
 
 Passo "Criando atalho na área de trabalho"
-$lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Orquestrador.lnk'
+$lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'IFlow.lnk'
 $shell = New-Object -ComObject WScript.Shell
 $atalho = $shell.CreateShortcut($lnk)
 $atalho.TargetPath       = $exe
 $atalho.WorkingDirectory = $workspaceDir
-$atalho.Description      = 'Orquestrador de agentes de IA - minicurso'
+$atalho.Description      = 'IFlow - orquestrador de agentes de IA'
 $atalho.Save()
 Ok $lnk
 
@@ -116,7 +116,7 @@ Máquina pronta. Falta o que só dá para fazer na mão:
   3. Dentro do agy, rode  /usage  e ANOTE o limite que aparecer.
      O Google não publica a cota do plano gratuito, e ela é semanal.
      É esse número que diz quantos turnos de agente a turma aguenta.
-  4. Feche o agy e abra o atalho Orquestrador na área de trabalho.
+  4. Feche o agy e abra o atalho IFlow na área de trabalho.
   5. Crie um terminal escolhendo a IA "Antigravity CLI (grátis)" e veja se a
      skill chega como primeiro prompt.
 

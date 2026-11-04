@@ -1,6 +1,6 @@
 import { type ReactElement, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
-import { Plus, Focus, Layers, PauseCircle, FilePlus, Group, Workflow } from 'lucide-react'
+import { Plus, Focus, Split, PauseCircle, FilePlus, Group, Workflow } from 'lucide-react'
 import { useTerminalStore, MAX_HOPS } from '../store/terminalStore'
 
 /** Botão secundário da barra. Todos iguais, para o primário ser o único colorido. */
@@ -70,11 +70,11 @@ export function TopBar(): ReactElement {
     <header className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between gap-4 px-4 py-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl">
       <div className="flex items-center gap-3 min-w-0">
         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-lg shadow-sky-500/25 flex-shrink-0">
-          <Layers className="w-5 h-5" />
+          <Split className="w-5 h-5 rotate-90" />
         </div>
         <div className="min-w-0">
           <h1 className="text-[15px] font-semibold tracking-tight text-white truncate leading-tight">
-            Agent Orchestrator
+            IFlow
           </h1>
           <p className="flex items-center gap-1.5 text-xs text-slate-400 truncate leading-tight mt-0.5">
             <span className="relative flex h-1.5 w-1.5 flex-shrink-0">

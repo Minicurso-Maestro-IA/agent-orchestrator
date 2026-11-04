@@ -1,4 +1,4 @@
-# Agent Orchestrator 🛸
+# IFlow 🛸
 
 Workspace desktop com **Canvas Espacial 2D infinito** capaz de orquestrar múltiplos terminais nativos e agentes de IA em nós conectáveis e arrastáveis.
 
@@ -108,7 +108,7 @@ exe: sem instalador e sem administrador.
 
 ```
 orquestrador-1.0.0-win-x64.zip
-├── Agent Orchestrator.exe
+├── IFlow.exe
 ├── agents.json          ← editável pelo aluno, ao lado do exe
 ├── skills/              ← editável pelo aluno, ao lado do exe
 └── resources/

@@ -14,7 +14,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#090d16',
-    title: 'Agent Orchestrator - Spatial Canvas',
+    title: 'IFlow — orquestrador de agentes de IA',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
