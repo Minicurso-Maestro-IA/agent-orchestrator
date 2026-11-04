@@ -2,7 +2,7 @@ import { useEffect, useRef, memo, type ReactElement } from 'react'
 import { Handle, Position, NodeProps, Node, NodeResizeControl, NodeResizer } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { Terminal as TerminalIcon, X, Sparkles, BookOpen, Play } from 'lucide-react'
+import { Terminal as TerminalIcon, X, Sparkles, BookOpen } from 'lucide-react'
 import { TerminalNodeData, TerminalDataEvent, TerminalExitEvent } from '@shared/types'
 import { useTerminalStore } from '../store/terminalStore'
 
@@ -53,9 +53,7 @@ function TerminalNodeComponent({
 
   const closeTerminal = useTerminalStore((s) => s.closeTerminal)
   const setTerminalActive = useTerminalStore((s) => s.setTerminalActive)
-  const hasOutgoingEdges = useTerminalStore((s) => s.edges.some((e) => e.source === id))
-  const triggerPipeline = useTerminalStore((s) => s.triggerPipeline)
-  const injectProtocol = useTerminalStore((s) => s.injectProtocol)
+
 
   useEffect(() => {
     if (!terminalContainerRef.current) return

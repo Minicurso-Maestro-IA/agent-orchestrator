@@ -93,7 +93,6 @@ interface TerminalState {
   resumePipeline: () => void
   cycleEdgeCondition: (edgeId: string) => void
   handlePipelineStatus: (event: PipelineStatusEvent) => Promise<void>
-  triggerPipeline: (terminalId: string, status?: PipelineStatus, reason?: string) => Promise<void>
   injectProtocol: (terminalId: string) => Promise<void>
   handleDocumentEvent: (event: DocumentEvent) => void
   createDocumentNode: (name: string) => Promise<void>
@@ -145,13 +144,6 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   pipelineHops: 0,
 
   setNewTerminalOpen: (open: boolean) => set({ newTerminalOpen: open }),
-  triggerPipeline: async (terminalId: string, status: PipelineStatus = 'approved', reason?: string) => {
-    await get().handlePipelineStatus({
-      terminalId,
-      status,
-      reason: reason || 'Avanço manual disparado no canvas'
-    })
-  },
   injectProtocol: async (terminalId: string) => {
     const api = typeof window !== 'undefined' ? window.orchestrator : undefined
     if (!api) return
@@ -198,14 +190,9 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const api = typeof window !== 'undefined' ? window.orchestrator : undefined
 
     if (isTerminal(source) && isTerminal(target)) {
-      api?.notifyTerminal(
-        source.id,
-        `▸ [Pipeline] Saída conectada a "${target.data.title}". Use o botão "Avançar" no topo ou grave o status ao terminar.`
-      )
-      api?.notifyTerminal(
-        target.id,
-        `▸ [Pipeline] Entrada conectada a "${source.data.title}". Aguardando conclusão para receber o trabalho.`
-      )
+      if (!source.data.agentLabel) {
+        api?.injectProtocol(source.id)
+      }
       return
     }
 
