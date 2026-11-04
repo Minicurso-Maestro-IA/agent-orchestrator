@@ -39,6 +39,18 @@ Passo "Criando $Destino"
 New-Item -ItemType Directory -Force -Path $Destino, $workspaceDir | Out-Null
 Ok "pastas prontas"
 
+# O Windows carimba todo arquivo vindo da internet (Mark-of-the-Web), e o
+# Expand-Archive repassa o carimbo para tudo que sai de dentro. É esse carimbo
+# que faz o SmartScreen aparecer. Tirar do zip ANTES de extrair resolve de uma
+# vez; depois seria preciso percorrer centenas de arquivos.
+Passo "Tirando a marca de arquivo baixado da internet"
+try {
+  Unblock-File -Path $Zip -ErrorAction Stop
+  Ok "zip desbloqueado"
+} catch {
+  Aviso "nao consegui desbloquear: $($_.Exception.Message)"
+}
+
 Passo "Descompactando o orquestrador em $appDir"
 if (Test-Path $appDir) {
   Remove-Item -Recurse -Force $appDir

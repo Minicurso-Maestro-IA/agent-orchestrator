@@ -1,7 +1,7 @@
 {
   "name": "agent-orchestrator",
   "version": "1.0.0",
-  "description": "Spatial 2D Canvas workspace running terminals and AI agents",
+  "description": "IFlow - orquestrador de agentes de IA",
   "main": "./out/main/index.js",
   "author": "Eliandro",
   "scripts": {

@@ -52,8 +52,12 @@ extraFiles:
       - '!**/dist/**'
 
 win:
+  # Um .exe sem ícone e sem descrição cai no pior dos dois mundos: o SmartScreen
+  # avisa igual e o aviso ainda mostra um binário anônimo. Isto não remove o
+  # aviso - só assinatura remove - mas faz o que aparece nele dizer o que é.
+  icon: build/icon.ico
   target:
     - target: zip
       arch:
         - x64
-  artifactName: orquestrador-${version}-win-x64.${ext}
+  artifactName: iflow-${version}-win-x64.${ext}
