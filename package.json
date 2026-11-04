@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "preview": "electron-vite preview"
+    "preview": "electron-vite preview",
+    "dist": "electron-vite build && electron-builder --win"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
@@ -29,9 +30,33 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
     "electron-vite": "^3.1.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.2.0"
+  },
+  "build": {
+    "appId": "com.minicurso.agent-orchestrator",
+    "productName": "Agent Orchestrator",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**",
+      "agents.json",
+      "skills/**",
+      "package.json"
+    ],
+    "asar": false,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        "portable",
+        "dir"
+      ],
+      "artifactName": "${productName}-${version}-portable.${ext}",
+      "signAndEditExecutable": false
+    }
   }
 }

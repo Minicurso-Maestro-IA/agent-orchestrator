@@ -43,6 +43,8 @@ function candidateFiles(): string[] {
   return [
     process.env.AGENT_ORCHESTRATOR_AGENTS_FILE,
     path.join(process.cwd(), 'agents.json'),
+    // O .exe portátil se extrai numa pasta temporária; esta é a pasta onde ele de fato está.
+    process.env.PORTABLE_EXECUTABLE_DIR && path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'agents.json'),
     path.join(app.getAppPath(), 'agents.json'),
     path.join(path.dirname(app.getPath('exe')), 'agents.json')
   ].filter((f): f is string => !!f)
