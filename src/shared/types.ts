@@ -83,6 +83,8 @@ export interface OrchestratorAPI {
   listAgents: () => Promise<AgentDefinition[]>
   /** Entrega um prompt ao agente de um terminal já em execução (roteamento do pipeline). */
   sendPrompt: (id: string, text: string) => Promise<boolean>
+  /** Injeta o protocolo de orquestração na CLI de IA ativa neste terminal. */
+  injectProtocol: (id: string) => Promise<boolean>
   /** Escreve um aviso na tela do terminal, sem passar pelo stdin do shell. */
   notifyTerminal: (id: string, text: string) => Promise<void>
   readDocument: (path: string) => Promise<DocumentInfo | null>

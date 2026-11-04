@@ -192,6 +192,10 @@ export class PtyManager extends EventEmitter {
   }
 
   /** Entrega um prompt a um agente já em execução. Usado pelo roteamento do pipeline. */
+  public injectProtocol(id: string): boolean {
+    return this.sendPrompt(id, this.protocolText(id))
+  }
+
   public sendPrompt(id: string, text: string): boolean {
     const session = this.sessions.get(id)
     if (!session) return false

@@ -37,6 +37,9 @@ const orchestratorAPI: OrchestratorAPI = {
   sendPrompt: (id: string, text: string): Promise<boolean> => {
     return ipcRenderer.invoke('terminal:prompt', id, text)
   },
+  injectProtocol: (id: string): Promise<boolean> => {
+    return ipcRenderer.invoke('terminal:inject-protocol', id)
+  },
   notifyTerminal: (id: string, text: string): Promise<void> => {
     return ipcRenderer.invoke('terminal:notify', id, text)
   },

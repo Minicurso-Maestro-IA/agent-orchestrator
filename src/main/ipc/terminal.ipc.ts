@@ -46,6 +46,10 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     return ptyManager.sendPrompt(id, text)
   })
 
+  ipcMain.handle('terminal:inject-protocol', async (_event, id: string) => {
+    return ptyManager.injectProtocol(id)
+  })
+
   ipcMain.handle('terminal:notify', async (_event, id: string, text: string) => {
     ptyManager.notify(id, text)
   })
