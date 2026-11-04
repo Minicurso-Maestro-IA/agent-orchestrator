@@ -65,7 +65,7 @@ export const CONDITION_LABELS: Record<EdgeCondition, string> = {
 }
 
 /** Um ciclo reprovando → corrigindo → reprovando queima crédito de API sem parar. */
-const MAX_HOPS = 20
+export const MAX_HOPS = 20
 /**
  * Teto de agentes criados por agentes. Um agente que se divide sem parar enche o
  * canvas e esvazia a cota antes de alguém perceber. O limite é da sessão: o

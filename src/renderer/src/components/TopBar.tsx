@@ -1,8 +1,34 @@
-import { type ReactElement } from 'react'
+import { type ReactElement, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
-import { useState } from 'react'
-import { Plus, Focus, Layers, PauseCircle, FilePlus, Group } from 'lucide-react'
-import { useTerminalStore } from '../store/terminalStore'
+import { Plus, Focus, Layers, PauseCircle, FilePlus, Group, Workflow } from 'lucide-react'
+import { useTerminalStore, MAX_HOPS } from '../store/terminalStore'
+
+/** Botão secundário da barra. Todos iguais, para o primário ser o único colorido. */
+function BarButton({
+  onClick,
+  title,
+  icon,
+  label,
+  hideBelow = 'lg'
+}: {
+  onClick: () => void
+  title: string
+  icon: ReactElement
+  label: string
+  hideBelow?: 'sm' | 'lg'
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="flex items-center gap-2 h-9 px-3 text-[13px] font-medium text-slate-200 hover:text-white bg-slate-700/60 hover:bg-slate-700 border border-slate-600/80 hover:border-slate-500 rounded-xl transition-colors cursor-pointer"
+    >
+      {icon}
+      <span className={hideBelow === 'sm' ? 'hidden sm:inline' : 'hidden lg:inline'}>{label}</span>
+    </button>
+  )
+}
 
 export function TopBar(): ReactElement {
   const { fitView } = useReactFlow()
@@ -10,52 +36,84 @@ export function TopBar(): ReactElement {
   const nodes = useTerminalStore((s) => s.nodes)
   const setNewTerminalOpen = useTerminalStore((s) => s.setNewTerminalOpen)
   const pipelineHalted = useTerminalStore((s) => s.pipelineHalted)
+  const pipelineHops = useTerminalStore((s) => s.pipelineHops)
   const resumePipeline = useTerminalStore((s) => s.resumePipeline)
   const createDocumentNode = useTerminalStore((s) => s.createDocumentNode)
   const createGroup = useTerminalStore((s) => s.createGroup)
   const [docName, setDocName] = useState('')
   const [docOpen, setDocOpen] = useState(false)
 
-  const activeCount = nodes.filter((n) => n.type === 'terminal' && n.data.active).length
+  const terminais = nodes.filter((n) => n.type === 'terminal' && n.data.active)
+  const total = terminais.length
+  const trabalhando = terminais.filter((n) => n.data.activity === 'working').length
+
+  /**
+   * O ponto só pulsa quando alguém está de fato trabalhando. Um indicador que
+   * pisca o tempo todo é um indicador que ninguém olha.
+   */
+  const pulsando = trabalhando > 0
+  const estado =
+    total === 0
+      ? 'nenhum terminal aberto'
+      : trabalhando > 0
+        ? `${total} ${total === 1 ? 'terminal' : 'terminais'} · ${trabalhando} trabalhando`
+        : `${total} ${total === 1 ? 'terminal' : 'terminais'} · tudo ocioso`
+
+  const criarDocumento = (): void => {
+    if (!docName.trim()) return
+    createDocumentNode(docName.trim())
+    setDocName('')
+    setDocOpen(false)
+  }
 
   return (
-    <header className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-600 rounded-2xl shadow-2xl">
+    <header className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between gap-4 px-4 py-2.5 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-lg shadow-sky-500/30 flex-shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-lg shadow-sky-500/25 flex-shrink-0">
           <Layers className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-bold tracking-tight text-white truncate">
-              Agent Orchestrator
-            </h1>
-            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-full bg-sky-400/20 text-sky-200 border border-sky-400/50 flex-shrink-0">
-              FASE 1 MVP
+          <h1 className="text-[15px] font-semibold tracking-tight text-white truncate leading-tight">
+            Agent Orchestrator
+          </h1>
+          <p className="flex items-center gap-1.5 text-xs text-slate-400 truncate leading-tight mt-0.5">
+            <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
+              {pulsando && (
+                <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
+              )}
+              <span
+                className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                  total === 0 ? 'bg-slate-600' : pulsando ? 'bg-amber-400' : 'bg-emerald-400'
+                }`}
+              />
             </span>
-          </div>
-          <p className="text-[11px] text-slate-300 truncate">
-            Workspace com Canvas Espacial 2D & Terminais Nativos
+            {estado}
           </p>
         </div>
       </div>
 
-      <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-900/70 rounded-xl border border-slate-600 text-xs text-slate-200 flex-shrink-0">
-        <span className="flex h-2 w-2 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-        </span>
-        <span className="text-slate-300">Terminais Ativos:</span>
-        <span className="font-mono font-bold text-white">{activeCount}</span>
-      </div>
-
       <div className="flex items-center gap-2 flex-shrink-0">
+        {pipelineHops > 0 && !pipelineHalted && (
+          <div
+            title="Saltos do pipeline. Ao chegar no limite o app pausa sozinho."
+            className="hidden md:flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-600/80 bg-slate-900/60 text-xs text-slate-300"
+          >
+            <Workflow className="w-3.5 h-3.5 text-sky-300" />
+            <span className="font-mono text-slate-100">
+              {pipelineHops}
+              <span className="text-slate-500">/{MAX_HOPS}</span>
+            </span>
+          </div>
+        )}
+
         {pipelineHalted && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/15 border border-rose-400/50 rounded-xl text-xs text-rose-200">
-            <PauseCircle className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2 h-9 px-3 bg-rose-500/15 border border-rose-400/50 rounded-xl text-xs text-rose-200">
+            <PauseCircle className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:inline">Pipeline pausado</span>
             <button
+              type="button"
               onClick={resumePipeline}
-              className="font-semibold text-rose-100 hover:text-white underline underline-offset-2"
+              className="font-semibold text-rose-100 hover:text-white underline underline-offset-2 cursor-pointer"
             >
               Retomar
             </button>
@@ -63,49 +121,40 @@ export function TopBar(): ReactElement {
         )}
 
         <button
+          type="button"
           onClick={() => setNewTerminalOpen(true)}
           title="Escolher shell, IA e skill"
-          className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 rounded-xl shadow-lg shadow-sky-500/30 transition-all transform active:scale-95"
+          className="flex items-center gap-2 h-9 px-4 text-[13px] font-semibold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 rounded-xl shadow-lg shadow-sky-500/25 transition-all active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span className="whitespace-nowrap">Novo Terminal</span>
+          <span className="whitespace-nowrap">Novo terminal</span>
         </button>
 
         <div className="relative">
-          <button
+          <BarButton
             onClick={() => setDocOpen(!docOpen)}
-            title="Novo documento .md"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white bg-slate-700/80 hover:bg-slate-700 border border-slate-500/80 rounded-xl transition-colors shadow-sm"
-          >
-            <FilePlus className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden lg:inline">Documento</span>
-          </button>
+            title="Novo documento .md no canvas"
+            icon={<FilePlus className="w-4 h-4" />}
+            label="Documento"
+          />
           {docOpen && (
-            <div className="absolute right-0 mt-2 w-64 p-2 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl z-50">
-              <label className="block text-[11px] text-slate-400 mb-1">Nome do arquivo</label>
+            <div className="absolute right-0 mt-2 w-64 p-3 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl z-50">
+              <label className="block text-xs text-slate-400 mb-1.5">Nome do arquivo</label>
               <input
                 autoFocus
                 value={docName}
                 onChange={(e) => setDocName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && docName.trim()) {
-                    createDocumentNode(docName.trim())
-                    setDocName('')
-                    setDocOpen(false)
-                  }
+                  if (e.key === 'Enter') criarDocumento()
                   if (e.key === 'Escape') setDocOpen(false)
                 }}
                 placeholder="regras-do-projeto"
-                className="w-full bg-slate-900 text-xs text-white px-2 py-1.5 rounded-lg border border-slate-600 outline-none focus:border-amber-400"
+                className="w-full bg-slate-900 text-[13px] text-white px-2.5 py-2 rounded-lg border border-slate-600 outline-none focus:border-sky-400 transition-colors"
               />
               <button
-                onClick={() => {
-                  if (!docName.trim()) return
-                  createDocumentNode(docName.trim())
-                  setDocName('')
-                  setDocOpen(false)
-                }}
-                className="mt-2 w-full px-2 py-1.5 text-xs font-semibold text-slate-900 bg-amber-300 hover:bg-amber-200 rounded-lg transition-colors"
+                type="button"
+                onClick={criarDocumento}
+                className="mt-2 w-full h-9 text-[13px] font-semibold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 rounded-lg transition-all cursor-pointer"
               >
                 Criar .md
               </button>
@@ -113,23 +162,20 @@ export function TopBar(): ReactElement {
           )}
         </div>
 
-        <button
+        <BarButton
           onClick={createGroup}
           title="Agrupar os nós selecionados sob um título"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white bg-slate-700/80 hover:bg-slate-700 border border-slate-500/80 rounded-xl transition-colors shadow-sm"
-        >
-          <Group className="w-3.5 h-3.5 text-indigo-300" />
-          <span className="hidden lg:inline">Agrupar</span>
-        </button>
+          icon={<Group className="w-4 h-4" />}
+          label="Agrupar"
+        />
 
-        <button
+        <BarButton
           onClick={() => fitView({ padding: 0.25, duration: 400 })}
-          title="Centralizar Visualização"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white bg-slate-700/80 hover:bg-slate-700 border border-slate-500/80 rounded-xl transition-colors shadow-sm"
-        >
-          <Focus className="w-3.5 h-3.5 text-sky-300" />
-          <span className="hidden sm:inline">Centralizar</span>
-        </button>
+          title="Enquadrar tudo na tela"
+          icon={<Focus className="w-4 h-4" />}
+          label="Centralizar"
+          hideBelow="sm"
+        />
       </div>
     </header>
   )
