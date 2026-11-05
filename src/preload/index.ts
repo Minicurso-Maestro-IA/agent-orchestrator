@@ -41,6 +41,9 @@ const orchestratorAPI: OrchestratorAPI = {
     return ipcRenderer.invoke('terminal:prompt', id, text)
   },
   injectProtocol: (id: string) => ipcRenderer.invoke('terminal:inject-protocol', id),
+  deliverSkill: (id: string, skillId?: string, task?: string): Promise<boolean> => {
+    return ipcRenderer.invoke('terminal:deliver-skill', id, skillId, task)
+  },
   notifyTerminal: (id: string, text: string): Promise<void> => {
     return ipcRenderer.invoke('terminal:notify', id, text)
   },
@@ -49,6 +52,12 @@ const orchestratorAPI: OrchestratorAPI = {
   },
   createDocument: (name: string, content: string): Promise<DocumentInfo | null> => {
     return ipcRenderer.invoke('doc:create', name, content)
+  },
+  writeDocumentFile: (filePath: string, content: string): Promise<boolean> => {
+    return ipcRenderer.invoke('doc:write', filePath, content)
+  },
+  readClipboard: (): Promise<string> => {
+    return ipcRenderer.invoke('clipboard:read')
   },
   onTerminalData: (callback: (event: TerminalDataEvent) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, data: TerminalDataEvent): void => {

@@ -36,8 +36,9 @@ Grave esse arquivo com estas seções:
 ```
 
 Depois de gravar, anuncie o arquivo para ele aparecer no canvas: grave um JSON
-de nome único na pasta de anúncios indicada no protocolo, com
-`{ "document": "<caminho do ESPECIFICACAO.md>", "intent": "especificação do passo 1" }`.
+de nome único na pasta de anúncios indicada no protocolo, exatamente no formato
+que o protocolo mostra — **inclusive o campo `from`, que já vem preenchido lá
+com o seu identificador**. É ele que liga o documento a você no canvas.
 
 ## O que separa uma boa especificação de uma ruim
 

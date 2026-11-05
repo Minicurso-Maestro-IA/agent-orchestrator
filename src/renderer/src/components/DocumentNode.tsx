@@ -1,4 +1,4 @@
-import { memo, type ReactElement } from 'react'
+import { memo, useEffect, useRef, useState, type ReactElement } from 'react'
 import { Handle, Position, NodeProps, Node, NodeResizer } from '@xyflow/react'
 import { FileText, X, Sparkles, Eye } from 'lucide-react'
 import { DocumentNodeData } from '@shared/types'
@@ -23,6 +23,36 @@ function DocumentNodeComponent({
   selected
 }: NodeProps<Node<DocumentNodeData>>): ReactElement {
   const removeNode = useTerminalStore((s) => s.removeNode)
+
+  // Documento que você criou é editável aqui mesmo; o que o agente escreveu, e
+  // o que veio do disco, continua só de leitura — dois lados escrevendo no
+  // mesmo arquivo sem trava é pedir para perder trabalho.
+  const editavel = data.origin === 'manual'
+  const [rascunho, setRascunho] = useState(data.content)
+  const editandoRef = useRef(false)
+  const gravacaoRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Enquanto o cursor está no campo, o que vem do watcher é ignorado: senão a
+  // nossa própria gravação voltaria por cima do que está sendo digitado.
+  useEffect(() => {
+    if (!editandoRef.current) setRascunho(data.content)
+  }, [data.content])
+
+  useEffect(() => {
+    return () => {
+      if (gravacaoRef.current) clearTimeout(gravacaoRef.current)
+    }
+  }, [])
+
+  const aoDigitar = (texto: string): void => {
+    setRascunho(texto)
+    if (gravacaoRef.current) clearTimeout(gravacaoRef.current)
+    gravacaoRef.current = setTimeout(() => {
+      window.orchestrator?.writeDocumentFile(data.path, texto).catch((err) => {
+        console.warn('[DocumentNode] Falha ao gravar', data.path, err)
+      })
+    }, 400)
+  }
 
   return (
     <div
@@ -80,9 +110,25 @@ function DocumentNodeComponent({
       )}
 
       {/* Conteúdo Técnico */}
-      <pre className="nodrag nowheel flex-1 w-full min-h-0 m-0 p-3 overflow-auto bg-[#0E1014] text-xs leading-relaxed text-[#A0A6B2] font-mono whitespace-pre-wrap break-words">
-        {data.content || '(vazio)'}
-      </pre>
+      {editavel ? (
+        <textarea
+          value={rascunho}
+          onChange={(e) => aoDigitar(e.target.value)}
+          onFocus={() => {
+            editandoRef.current = true
+          }}
+          onBlur={() => {
+            editandoRef.current = false
+          }}
+          spellCheck={false}
+          placeholder="Escreva aqui. O arquivo em disco é gravado sozinho."
+          className="nodrag nowheel nopan flex-1 w-full min-h-0 m-0 p-3 resize-none overflow-auto bg-[#0E1014] text-xs leading-relaxed text-[#E6E8EC] font-mono outline-none border-none placeholder:text-[#4A515C]"
+        />
+      ) : (
+        <pre className="nodrag nowheel flex-1 w-full min-h-0 m-0 p-3 overflow-auto bg-[#0E1014] text-xs leading-relaxed text-[#A0A6B2] font-mono whitespace-pre-wrap break-words">
+          {data.content || '(vazio)'}
+        </pre>
+      )}
 
       {/* Indicador de Conteúdo Truncado */}
       {data.truncated && (

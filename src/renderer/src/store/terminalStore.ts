@@ -51,6 +51,8 @@ export interface SpawnContext {
   title?: string
   /** Id do terminal que pediu a criação, quando não foi o humano. */
   spawnedBy?: string
+  /** false cria o nó com a CLI escolhida mas parada, esperando o botão Iniciar. */
+  autoStart?: boolean
 }
 
 export const CONDITION_COLORS: Record<EdgeCondition, string> = {
@@ -107,6 +109,9 @@ interface TerminalState {
   selectedAgentId: string | null
   selectedSkillId: string | null
   newTerminalOpen: boolean
+  /** Nó cujo botão Começar está aberto pedindo a tarefa. */
+  taskPromptFor: string | null
+  setTaskPromptFor: (id: string | null) => void
   setNewTerminalOpen: (open: boolean) => void
   pipelineHalted: boolean
   pipelineHops: number
@@ -132,6 +137,8 @@ interface TerminalState {
   onEdgesChange: OnEdgesChange
   onConnect: OnConnect
   addTerminal: (ctx?: SpawnContext) => Promise<string | null>
+  /** Entrega a skill a um nó criado parado, com uma tarefa opcional junto. */
+  startAgentNode: (id: string, task?: string) => Promise<void>
   closeTerminal: (id: string) => Promise<void>
   setTerminalActive: (id: string, active: boolean) => void
   clearAllTerminals: () => Promise<void>
@@ -165,11 +172,14 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   selectedAgentId: null,
   selectedSkillId: null,
   newTerminalOpen: false,
+  taskPromptFor: null,
   pipelineHalted: false,
   pipelineHops: 0,
   agentSpawns: 0,
 
   setNewTerminalOpen: (open: boolean) => set({ newTerminalOpen: open }),
+
+  setTaskPromptFor: (id: string | null) => set({ taskPromptFor: id }),
   /**
    * O processo principal avisou que o TerminalInfo mudou — hoje, que uma CLI
    * foi reconhecida pelo que a pessoa digitou. Sem isto o nó segue sem agente
@@ -227,6 +237,11 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   },
 
   onConnect: (connection: Connection) => {
+    // Um nó ligado a si mesmo recebe o próprio veredito e dispara de novo: o
+    // pipeline gira até o limite de saltos sem ninguém revisar nada. A tela já
+    // recusa o arrasto; isto fecha o caminho de quem chama o store direto.
+    if (connection.source === connection.target) return
+
     set({ edges: addEdge({ ...connection, ...EDGE_DEFAULTS }, get().edges) })
 
     const { nodes } = get()
@@ -246,7 +261,19 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
 
     // Ligar um documento a um terminal injeta o conteúdo como contexto do agente.
     if (!isDocument(source) || !isTerminal(target)) return
-    if (!api || !target.data.active) return
+    if (!api) return
+
+    // Sem CLI de IA de pé não há para quem entregar o contexto. Antes isto saía
+    // em silêncio, e a aresta ficava desenhada dando a impressão de que o
+    // documento tinha sido carregado.
+    if (!target.data.active) {
+      api.notifyTerminal(
+        target.id,
+        `▸ Documento "${source.data.name}" não foi carregado: este terminal não tem ` +
+          'uma CLI de IA em execução. Inicie o agente e ligue o documento de novo.'
+      )
+      return
+    }
 
     const prompt = [
       `Contexto adicional do documento "${source.data.name}":`,
@@ -343,6 +370,19 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
               .filter(Boolean)
               .join('\n')
 
+      // Destino ainda parado: a CLI já está de pé desde que o nó nasceu, mas
+      // sem contexto. Entregamos skill, protocolo e trabalho num prompt só —
+      // é isto que faz o nó 2 só começar quando o nó 1 aprova.
+      if (target.data.pendingStart) {
+        await get().startAgentNode(edge.target, prompt)
+        set((s) => ({ pipelineHops: s.pipelineHops + 1 }))
+        await api?.notifyTerminal(
+          edge.target,
+          `▸ Recebido de "${source.data.title}" (${CONDITION_LABELS[conditionOf(edge)]})`
+        )
+        continue
+      }
+
       const delivered = await api?.sendPrompt(edge.target, prompt)
       if (delivered) {
         set((s) => ({ pipelineHops: s.pipelineHops + 1 }))
@@ -389,7 +429,23 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       // cada .md salvo no projeto encheria o canvas de ruído.
       if (event.origin !== 'agent') return state
 
-      const pos = nextPosition(state.nodes.length)
+      // Quem anunciou, quando o JSON traz o "from". Nasce logo abaixo de quem
+      // escreveu, para a turma ver de qual agente o documento saiu.
+      // Sem "from" — o modelo esqueceu de copiar o campo — atribuímos ao único
+      // agente que está trabalhando neste instante. Com dois ou mais não há
+      // como saber, e um palpite errado mentiria no canvas: aí fica solto.
+      const trabalhando = state.nodes.filter(
+        (n) => isTerminal(n) && n.data.activity === 'working'
+      )
+      const autor = event.from
+        ? state.nodes.find((n) => n.id === event.from)
+        : trabalhando.length === 1
+          ? trabalhando[0]
+          : undefined
+      const pos = autor
+        ? { x: autor.position.x, y: autor.position.y + sizeOf(autor).h + 48 }
+        : nextPosition(state.nodes.length)
+
       const node: DocumentFlowNode = {
         id: `doc-${event.path}`,
         type: 'document',
@@ -405,7 +461,40 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
           origin: event.origin
         }
       }
-      return { nodes: [...state.nodes, node] }
+
+      // Traço fino e pontilhado, sem condição e sem tipo 'condition': estas
+      // arestas não roteiam nada e não injetam nada. Quem roteia continua sendo
+      // o veredito, pelas arestas do pipeline.
+      const traco = (de: string, para: string): Edge => ({
+        id: `doc-${de}-${para}`,
+        source: de,
+        target: para,
+        animated: false,
+        style: { stroke: '#D6A45D', strokeWidth: 1.5, strokeDasharray: '4 4' },
+        selectable: true
+      })
+
+      const novas: Edge[] = []
+      if (autor) {
+        // Quem escreveu.
+        novas.push(traco(autor.id, node.id))
+
+        // E para onde isso vai: os destinos do autor no pipeline. Desenhar sem
+        // injetar é de propósito — o próximo agente já recebe o caminho do
+        // arquivo no `reason` do veredito, e a skill dele manda abrir. Injetar
+        // aqui mandaria a especificação inteira duas vezes.
+        for (const destino of state.edges.filter(
+          (e) => e.source === autor.id && e.type === 'condition'
+        )) {
+          novas.push(traco(node.id, destino.target))
+        }
+      }
+
+      const jaExiste = new Set(state.edges.map((e) => e.id))
+      return {
+        nodes: [...state.nodes, node],
+        edges: [...state.edges, ...novas.filter((e) => !jaExiste.has(e.id))]
+      }
     })
   },
 
@@ -529,7 +618,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
           shell,
           agentId: agentId || undefined,
           skillId: skillId || undefined,
-          task: ctx.task
+          task: ctx.task,
+          autoStart: ctx.autoStart
         })
       } else {
         const agent = state.agents.find((a) => a.id === agentId)
@@ -564,6 +654,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
           agentId: agentId || undefined,
           skillId: skillId || undefined,
           activity: 'idle',
+          pendingStart: ctx.autoStart === false && !!agentId,
           spawnedBy: ctx.spawnedBy
         }
       }
@@ -672,6 +763,28 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
         `▸ Agente "${event.name || id}" criado e ligado a você.`
       )
     }
+  },
+
+  startAgentNode: async (id: string, task?: string) => {
+    const node = get().nodes.find((n) => n.id === id)
+    if (!node || !isTerminal(node) || !node.data.pendingStart) return
+
+    const api = typeof window !== 'undefined' ? window.orchestrator : undefined
+    if (!api) return
+
+    const ok = await api.deliverSkill(id, node.data.skillId, task)
+    if (!ok) {
+      await api.notifyTerminal(id, '▸ Não foi possível entregar a skill a este terminal.')
+      return
+    }
+
+    set((state) => ({
+      nodes: state.nodes.map((n) =>
+        isTerminal(n) && n.id === id
+          ? ({ ...n, data: { ...n.data, pendingStart: false } } as TerminalFlowNode)
+          : n
+      )
+    }))
   },
 
   closeTerminal: async (id: string) => {

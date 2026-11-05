@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactElement } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react'
 import {
   ReactFlow,
   Background,
@@ -7,26 +7,31 @@ import {
   BackgroundVariant,
   ConnectionMode,
   ConnectionLineType,
-  useReactFlow
+  useReactFlow,
+  type Edge,
+  type IsValidConnection,
+  type OnBeforeDelete,
+  type OnNodesDelete
 } from '@xyflow/react'
 import { TerminalNode } from './TerminalNode'
 import { TopBar } from './TopBar'
 import { NewTerminalModal } from './NewTerminalModal'
+import { StartTaskModal } from './StartTaskModal'
 import { ConditionEdge } from './ConditionEdge'
 import { DocumentNode } from './DocumentNode'
 import { GroupNode } from './GroupNode'
-import { useTerminalStore, EDGE_DEFAULTS } from '../store/terminalStore'
+import { useTerminalStore, EDGE_DEFAULTS, type AppNode } from '../store/terminalStore'
+import { confirmarEncerrarOcupados, terminaisOcupados } from '../lib/confirmar'
 
 export function SpatialCanvas(): ReactElement {
   const initializedRef = useRef(false)
-  const { fitView, zoomIn, zoomOut } = useReactFlow()
+  const { zoomIn, zoomOut } = useReactFlow()
 
   const nodes = useTerminalStore((s) => s.nodes)
   const edges = useTerminalStore((s) => s.edges)
   const onNodesChange = useTerminalStore((s) => s.onNodesChange)
   const onEdgesChange = useTerminalStore((s) => s.onEdgesChange)
   const onConnect = useTerminalStore((s) => s.onConnect)
-  const addTerminal = useTerminalStore((s) => s.addTerminal)
   const loadCatalog = useTerminalStore((s) => s.loadCatalog)
   const handlePipelineStatus = useTerminalStore((s) => s.handlePipelineStatus)
   const setTerminalActivity = useTerminalStore((st) => st.setTerminalActivity)
@@ -34,6 +39,7 @@ export function SpatialCanvas(): ReactElement {
   const handleTrace = useTerminalStore((st) => st.handleTrace)
   const aplicarInfo = useTerminalStore((st) => st.applyTerminalInfo)
   const handleDocumentEvent = useTerminalStore((s) => s.handleDocumentEvent)
+  const removeNode = useTerminalStore((s) => s.removeNode)
 
   const nodeTypes = useMemo(
     () => ({
@@ -140,22 +146,57 @@ export function SpatialCanvas(): ReactElement {
     if (initializedRef.current) return
     initializedRef.current = true
 
+    // O canvas abre vazio. O terminal de boas-vindas existia para a tela não
+    // nascer em branco, mas atrapalha quem vai montar um pipeline: era sempre
+    // um nó a mais para apagar antes de começar.
     loadCatalog()
+  }, [loadCatalog])
 
-    if (nodes.length === 0) {
-      // Terminal inicial sem agente: o usuário escolhe o contexto nos próximos.
-      addTerminal({ shell: 'powershell', agentId: null, skillId: null }).then(() => {
-        setTimeout(() => {
-          fitView({ padding: 0.25, duration: 600 })
-        }, 300)
+  // Apagar um grupo pelo teclado tem de devolver os filhos, igual ao × do
+  // cabeçalho — e não levar junto os terminais que estão dentro dele, que é o
+  // que o React Flow faria sozinho.
+  const onBeforeDelete = useCallback<OnBeforeDelete<AppNode, Edge>>(
+    async ({ nodes: aApagar, edges: arestas }) => {
+      const grupos = aApagar.filter((n) => n.type === 'group')
+      const idsDeGrupo = new Set(grupos.map((g) => g.id))
+
+      const sobram = aApagar.filter(
+        (n) => n.type !== 'group' && !(n.parentId && idsDeGrupo.has(n.parentId))
+      )
+
+      // Um agente trabalhando morre com o processo, e o canvas não desfaz.
+      if (!confirmarEncerrarOcupados(terminaisOcupados(sobram))) return false
+
+      if (grupos.length === 0) return { nodes: aApagar, edges: arestas }
+
+      grupos.forEach((g) => removeNode(g.id))
+      return { nodes: sobram, edges: arestas }
+    },
+    [removeNode]
+  )
+
+  // O nó sai da tela pelo React Flow; o processo por trás dele é nosso.
+  const onNodesDelete = useCallback<OnNodesDelete<AppNode>>((apagados) => {
+    apagados.forEach((node) => {
+      if (node.type !== 'terminal' || !window.orchestrator) return
+      window.orchestrator.killTerminal(node.id).catch((err) => {
+        console.warn(`[SpatialCanvas] Erro ao encerrar o terminal ${node.id}:`, err)
       })
-    }
-  }, [addTerminal, fitView, loadCatalog, nodes.length])
+    })
+  }, [])
+
+  // Um nó ligado a si mesmo roteia o próprio veredito de volta para ele:
+  // o pipeline gira sozinho até o limite de saltos, sem ninguém revisar nada.
+  const isValidConnection = useCallback<IsValidConnection<Edge>>(
+    (conexao) => conexao.source !== conexao.target,
+    []
+  )
 
   return (
     <div className="flex flex-col w-screen h-screen bg-[#0C0E12] overflow-hidden select-none">
       <TopBar />
       <NewTerminalModal />
+      <StartTaskModal />
 
       <div className="flex-1 w-full h-full relative min-h-0">
         <ReactFlow
@@ -164,6 +205,13 @@ export function SpatialCanvas(): ReactElement {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onBeforeDelete={onBeforeDelete}
+          onNodesDelete={onNodesDelete}
+          isValidConnection={isValidConnection}
+          // O padrão do React Flow é só Backspace, que ninguém tenta. Teclas em
+          // campo de texto são ignoradas pela própria biblioteca, então digitar
+          // no terminal não apaga nó nenhum.
+          deleteKeyCode={['Delete', 'Backspace']}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           // Loose: qualquer handle pode iniciar ou receber uma conexão, então dá

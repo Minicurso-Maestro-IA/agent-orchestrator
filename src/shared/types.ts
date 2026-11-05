@@ -56,6 +56,13 @@ export interface TerminalSpawnOptions {
   /** Opcional: carrega esta skill como contexto inicial do agente. */
   skillId?: string
   /**
+   * Padrão true. Com false a CLI sobe normalmente, mas sem skill, sem
+   * protocolo e sem tarefa: fica de pé e parada, esperando o botão Começar ou
+   * o trabalho chegar pelo pipeline. Serve para montar o fluxo inteiro antes de
+   * qualquer agente gastar um turno.
+   */
+  autoStart?: boolean
+  /**
    * Trabalho entregue junto do primeiro prompt. Usado quando um agente cria
    * outro: evita ter de adivinhar quando a CLI terminou de subir para só então
    * mandar a tarefa.
@@ -128,10 +135,20 @@ export interface OrchestratorAPI {
   sendPrompt: (id: string, text: string) => Promise<boolean>
   /** Injeta o protocolo de orquestração na CLI de IA ativa neste terminal. */
   injectProtocol: (id: string) => Promise<boolean>
+  /** Entrega a skill (e uma tarefa opcional) a uma CLI que subiu sem contexto. */
+  deliverSkill: (id: string, skillId?: string, task?: string) => Promise<boolean>
   /** Escreve um aviso na tela do terminal, sem passar pelo stdin do shell. */
   notifyTerminal: (id: string, text: string) => Promise<void>
   readDocument: (path: string) => Promise<DocumentInfo | null>
   createDocument: (name: string, content: string) => Promise<DocumentInfo | null>
+  /** Grava o conteúdo editado de um nó de documento de volta no arquivo. */
+  writeDocumentFile: (path: string, content: string) => Promise<boolean>
+  /**
+   * Texto da área de transferência. Existe porque o app não registra Menu do
+   * Electron — sem ele o Ctrl+V nativo do Chromium nunca dispara, e a tecla
+   * seguiria crua para o PTY.
+   */
+  readClipboard: () => Promise<string>
   onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
   onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
   onTerminalActivity: (callback: (event: TerminalActivityEvent) => void) => () => void
@@ -191,6 +208,8 @@ export interface DocumentEvent extends DocumentInfo {
   origin: 'disk' | 'agent'
   /** Por que o agente abriu o documento, quando ele informa. */
   intent?: string
+  /** ORCHESTRATOR_TERMINAL_ID de quem anunciou, para ligar o nó a quem o escreveu. */
+  from?: string
 }
 
 export interface DocumentNodeData extends Record<string, unknown> {
@@ -220,6 +239,8 @@ export interface TerminalNodeData extends Record<string, unknown> {
   agentId?: string
   skillId?: string
   activity?: TerminalActivity
+  /** CLI de pé, mas ainda sem skill: o nó mostra o botão Começar. */
+  pendingStart?: boolean
   /** Marca os nós que um agente criou, para distinguir do que o humano desenhou. */
   spawnedBy?: string
   /** Últimas ações do agente, as mais recentes primeiro. */

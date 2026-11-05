@@ -90,11 +90,13 @@ body,
 }
 
 /* Conectores / Handles: pinos de precisão circulares */
+/* 14px em vez de 8: o alvo de 8 exigia mira para começar uma conexão, e
+   montar um pipeline é arrastar de bolinha em bolinha o tempo todo. */
 .react-flow__handle {
-  width: 8px !important;
-  height: 8px !important;
+  width: 14px !important;
+  height: 14px !important;
   background-color: #242933 !important;
-  border: 1.5px solid #454e5e !important;
+  border: 2px solid #454e5e !important;
   border-radius: 9999px !important;
   transition: all 140ms ease !important;
   opacity: 0.85;
@@ -110,16 +112,17 @@ body,
 .react-flow__handle:hover {
   background-color: #5b9bd5 !important;
   border-color: #e6e8ec !important;
-  transform: scale(1.25);
+  transform: scale(1.2);
 }
 
 .react-flow__node {
   cursor: default;
 }
 
+/* Mais grossa que a regra antiga de 2px: com !important ela vencia o estilo
+   inline da ConditionEdge, e a aresta selecionada ficava igual às outras. */
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: #5b9bd5 !important;
-  stroke-width: 2 !important;
+  stroke-width: 3.5 !important;
 }
 
 /* Controles compactos de visualização */

@@ -22,7 +22,8 @@ export function ConditionEdge({
   targetPosition,
   markerEnd,
   style,
-  data
+  data,
+  selected
 }: EdgeProps): ReactElement {
   const cycle = useTerminalStore((s) => s.cycleEdgeCondition)
 
@@ -42,7 +43,14 @@ export function ConditionEdge({
 
   return (
     <>
-      <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />
+      {/* Selecionada fica mais grossa e opaca: sem isso não dá para saber qual
+          aresta o Delete vai levar. */}
+      <BaseEdge
+        id={id}
+        path={path}
+        markerEnd={markerEnd}
+        style={selected ? { ...style, strokeWidth: 3.5, strokeOpacity: 1 } : style}
+      />
       <EdgeLabelRenderer>
         {/* Zona de hover estável e ampliada: evita flicker ao passar o mouse perto da borda */}
         <div
@@ -68,7 +76,11 @@ export function ConditionEdge({
           }}
         >
           {/* Label compacta com fundo neutro e indicação funcional */}
-          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono tracking-wide border border-[#262B34] bg-[#171A20] text-[#A0A6B2] shadow-sm transition-colors duration-140 group-hover:border-[#303641] group-hover:text-[#E6E8EC]">
+          <span
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono tracking-wide border bg-[#171A20] shadow-sm transition-colors duration-140 group-hover:border-[#303641] group-hover:text-[#E6E8EC] ${
+              selected ? 'border-[#5B9BD5] text-[#E6E8EC]' : 'border-[#262B34] text-[#A0A6B2]'
+            }`}
+          >
             <span
               className="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: color }}

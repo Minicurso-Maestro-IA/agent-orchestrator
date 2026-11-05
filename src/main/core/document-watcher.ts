@@ -80,10 +80,15 @@ export class DocumentWatcher extends EventEmitter {
     )
   }
 
-  private emitDocument(full: string, origin: 'disk' | 'agent', intent?: string): void {
+  private emitDocument(
+    full: string,
+    origin: 'disk' | 'agent',
+    intent?: string,
+    from?: string
+  ): void {
     const doc = readDocument(full)
     if (!doc) return
-    this.emit('document', { ...doc, origin, intent } as DocumentEvent)
+    this.emit('document', { ...doc, origin, intent, from } as DocumentEvent)
   }
 
   private scanAnnouncements(): void {
@@ -105,7 +110,7 @@ export class DocumentWatcher extends EventEmitter {
       const text = raw.replace(/^﻿/, '').trim()
       if (!text.endsWith('}')) continue
 
-      let parsed: { document?: unknown; intent?: unknown }
+      let parsed: { document?: unknown; intent?: unknown; from?: unknown }
       try {
         parsed = JSON.parse(text)
       } catch {
@@ -118,7 +123,14 @@ export class DocumentWatcher extends EventEmitter {
       const target = path.isAbsolute(parsed.document)
         ? parsed.document
         : path.join(this.rootDir, parsed.document)
-      this.emitDocument(target, 'agent', typeof parsed.intent === 'string' ? parsed.intent : undefined)
+      // 'from' é o ORCHESTRATOR_TERMINAL_ID de quem anunciou: é o que deixa o
+      // canvas mostrar de qual agente o documento saiu.
+      this.emitDocument(
+        target,
+        'agent',
+        typeof parsed.intent === 'string' ? parsed.intent : undefined,
+        typeof parsed.from === 'string' ? parsed.from : undefined
+      )
     }
   }
 }

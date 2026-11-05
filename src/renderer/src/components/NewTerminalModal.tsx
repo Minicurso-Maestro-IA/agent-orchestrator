@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactElement, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import {
   X,
   Sparkles,
@@ -89,6 +89,12 @@ export function NewTerminalModal(): ReactElement | null {
   const setSkill = useTerminalStore((s) => s.setSelectedSkill)
   const addTerminal = useTerminalStore((s) => s.addTerminal)
 
+  // Nasce desmarcado de propósito. A CLI sobe de qualquer jeito; o que esta
+  // caixa decide é se a skill vai junto. Com ela marcada nos três nós, os três
+  // começam a trabalhar ao mesmo tempo, que é o oposto de um pipeline.
+  // Fica lembrado entre aberturas do diálogo.
+  const [iniciarAgora, setIniciarAgora] = useState(false)
+
   const confirmRef = useRef<HTMLButtonElement>(null)
 
   const agent = agents.find((a) => a.id === agentId)
@@ -115,7 +121,7 @@ export function NewTerminalModal(): ReactElement | null {
   if (!open) return null
 
   const create = (): void => {
-    addTerminal()
+    addTerminal({ autoStart: iniciarAgora })
     setOpen(false)
   }
 
@@ -227,6 +233,20 @@ export function NewTerminalModal(): ReactElement | null {
         </div>
 
         <footer className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-[#262B34] bg-[#14171D]">
+          {/* Montar o pipeline inteiro antes de qualquer agente começar evita
+              que os nós 2 e 3 gastem um turno à toa enquanto o 1 trabalha. */}
+          {agentId && (
+            <label className="flex items-center gap-1.5 text-[11px] text-[#A0A6B2] cursor-pointer select-none flex-shrink-0">
+              <input
+                type="checkbox"
+                checked={iniciarAgora}
+                onChange={(e) => setIniciarAgora(e.target.checked)}
+                className="accent-[#5B9BD5] w-3 h-3"
+              />
+              Começar a trabalhar já
+            </label>
+          )}
+
           <p className="text-[11px] text-[#737B88] font-mono min-w-0 truncate">
             <span className="text-[#A0A6B2]">{shell}</span>
             {agent && (

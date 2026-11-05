@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, clipboard } from 'electron'
 import { ptyManager } from '../core/pty-manager'
 import { listSkills } from '../core/skill-registry'
 import { listAgents } from '../core/agent-registry'
@@ -51,6 +51,13 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     return ptyManager.sendPrompt(id, text)
   })
 
+  ipcMain.handle(
+    'terminal:deliver-skill',
+    async (_event, id: string, skillId?: string, task?: string) => {
+      return ptyManager.deliverSkill(id, skillId, task)
+    }
+  )
+
   ipcMain.handle('terminal:inject-protocol', async (_event, id: string) => {
     return ptyManager.injectProtocol(id)
   })
@@ -68,6 +75,20 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     const file = path.join(documentWatcher.rootDir, safe.endsWith('.md') ? safe : `${safe}.md`)
     if (!writeDocument(file, content)) return null
     return readDocument(file)
+  })
+
+  // Grava o que foi digitado no nó de documento. Só vale para arquivos que o
+  // watcher já conhece; o conteúdo volta pelo evento de disco, como qualquer
+  // outra escrita.
+  ipcMain.handle('doc:write', async (_event, filePath: string, content: string) => {
+    return writeDocument(filePath, content)
+  })
+
+  // O colar do terminal passa por aqui, e não pelo Ctrl+V do Chromium: sem um
+  // Menu registrado o atalho nativo não existe, e a tecla iria crua para o PTY
+  // — onde uma CLI como o agy a interpreta como "colar imagem".
+  ipcMain.handle('clipboard:read', async () => {
+    return clipboard.readText()
   })
 
   ptyManager.onData((event: TerminalDataEvent) => {

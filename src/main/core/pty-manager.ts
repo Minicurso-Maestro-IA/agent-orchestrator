@@ -164,7 +164,11 @@ export class PtyManager extends EventEmitter {
     const bootstrap = (): void => {
       if (bootstrapped) return
       bootstrapped = true
-      if (agent) this.startAgent(id, agent, options.skillId, options.task)
+      // A CLI sobe sempre — o nó tem de mostrar o agente de pé. O que
+      // autoStart:false segura é o contexto: sem skill, ele não começa nada.
+      if (agent) {
+        this.startAgent(id, agent, options.skillId, options.task, options.autoStart !== false)
+      }
     }
 
     ptyProcess.onData((data: string) => {
@@ -226,7 +230,11 @@ export class PtyManager extends EventEmitter {
       '',
       documentWatcher.announceDirFor(),
       '',
-      '{ "document": "<caminho do .md>", "intent": "<por que você abriu>" }',
+      `{ "document": "<caminho do .md>", "intent": "<por que você abriu>", "from": "${id}" }`,
+      '',
+      'O campo "from" já vem preenchido acima com o seu identificador: copie-o como está.',
+      'É ele que liga o documento a você no canvas; sem ele o nó aparece solto e',
+      'ninguém sabe de qual agente o arquivo saiu.',
       '',
       '### Criando outro agente',
       '',
@@ -302,11 +310,23 @@ export class PtyManager extends EventEmitter {
     }
   }
 
+  /**
+   * Entrega a skill (e, opcionalmente, uma tarefa) a uma CLI que já está de pé.
+   * É o segundo tempo do nó criado parado: a CLI subiu junto com o nó, mas sem
+   * contexto, e só começa a trabalhar quando este prompt chega.
+   */
+  public deliverSkill(id: string, skillId?: string, task?: string): boolean {
+    if (!this.sessions.has(id)) return false
+    const skill = skillId ? findSkill(skillId) : undefined
+    return this.sendPrompt(id, this.composePrompt(id, skill, task))
+  }
+
   private startAgent(
     id: string,
     agent: AgentDefinition,
     skillId?: string,
-    task?: string
+    task?: string,
+    comPrompt = true
   ): void {
     const session = this.sessions.get(id)
     if (!session) return
@@ -317,7 +337,10 @@ export class PtyManager extends EventEmitter {
 
     const parts = [agent.command, ...(agent.args || [])]
 
-    if (delivery === 'arg' && agent.skillArgs?.length) {
+    // comPrompt:false sobe a CLI pelada — sem skill, sem protocolo, sem tarefa.
+    // O terminal mostra o agente de pé e parado, esperando. É o que permite
+    // montar o pipeline sem que três agentes comecem a trabalhar de uma vez.
+    if (comPrompt && delivery === 'arg' && agent.skillArgs?.length) {
       // \u0000 não aparece em caminho nem em nome de skill: serve só para
       // procurar os placeholders no conjunto dos argumentos de uma vez.
       const template = agent.skillArgs.join('\u0000')
@@ -365,13 +388,17 @@ export class PtyManager extends EventEmitter {
 
     this.notify(
       id,
-      `▸ Iniciando ${agent.label}${skill ? ` com a skill "${skill.name}"` : ''}...` +
-        (agent.install ? `  (se falhar: ${agent.install})` : '')
+      comPrompt
+        ? `▸ Iniciando ${agent.label}${skill ? ` com a skill "${skill.name}"` : ''}...` +
+            (agent.install ? `  (se falhar: ${agent.install})` : '')
+        : `▸ Iniciando ${agent.label} sem contexto. A skill` +
+            `${skill ? ` "${skill.name}"` : ''} é entregue quando você apertar Começar,` +
+            ' ou quando o pipeline mandar trabalho para este nó.'
     )
 
     session.ptyProcess.write(parts.join(' ') + '\r')
 
-    if (delivery !== 'paste') return
+    if (!comPrompt || delivery !== 'paste') return
 
     const payload = prompt.replace(/\r?\n/g, '\r')
     session.timers.push(

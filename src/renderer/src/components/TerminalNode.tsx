@@ -11,6 +11,7 @@ import {
   FileText,
   FilePen,
   SquareTerminal,
+  Play,
   Search,
   Globe,
   Wrench
@@ -99,6 +100,7 @@ function TerminalNodeComponent({
 
   const closeTerminal = useTerminalStore((s) => s.closeTerminal)
   const setTerminalActive = useTerminalStore((s) => s.setTerminalActive)
+  const setTaskPromptFor = useTerminalStore((s) => s.setTaskPromptFor)
 
   const isTitleSameAsShell =
     data.title && data.title.toLowerCase().trim() === data.shell.toLowerCase().trim()
@@ -121,6 +123,32 @@ function TerminalNodeComponent({
     term.loadAddon(fitAddon)
 
     term.attachCustomKeyEventHandler((event) => {
+      // Colar. O app não registra Menu do Electron, então o Ctrl+V nativo do
+      // Chromium nunca dispara e a tecla seguiria crua (0x16) para o PTY — uma
+      // CLI como o agy a lê como "colar imagem". Lemos o texto pelo main e
+      // entregamos ao xterm, que cuida do bracketed paste e das quebras.
+      //
+      // Só o colar é interceptado: Ctrl+C continua indo para o PTY como
+      // interrupção, que é o que serve para cancelar um agente.
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.altKey &&
+        (event.key === 'v' || event.key === 'V')
+      ) {
+        // O handler recebe keydown, keypress e keyup: sem este filtro o mesmo
+        // Ctrl+V colaria mais de uma vez.
+        if (event.type !== 'keydown') return false
+        void window.orchestrator
+          ?.readClipboard()
+          .then((texto) => {
+            if (texto) term.paste(texto)
+          })
+          .catch((err) => {
+            console.warn('[TerminalNode] Falha ao ler a área de transferência:', err)
+          })
+        return false
+      }
+
       // Permite que Ctrl + e Ctrl - passem para o SpatialCanvas realizar o zoom
       if (
         (event.ctrlKey || event.metaKey) &&
@@ -287,8 +315,31 @@ function TerminalNodeComponent({
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+          {data.pendingStart && (
+            <button
+              onClick={() => setTaskPromptFor(id)}
+              title="Entregar a skill junto com a tarefa e pôr este agente para trabalhar"
+              className="h-5 px-2 rounded text-[10px] font-medium text-[#0B0D11] bg-[#62B58A] hover:bg-[#7BC4A0] inline-flex items-center gap-1 transition-colors"
+            >
+              <Play className="w-3 h-3" />
+              Começar
+            </button>
+          )}
           <button
-            onClick={() => closeTerminal(id)}
+            onClick={() => {
+              // Mesma pergunta do Delete: o × não pode ser o caminho fácil de
+              // matar um agente no meio do turno.
+              if (data.activity === 'working') {
+                const ok = window.confirm(
+                  `O terminal "${data.skillName || data.agentLabel || data.title || data.shell}" ` +
+                    'está trabalhando agora.\n\nFechar encerra o processo na hora. O que o ' +
+                    'agente ainda não gravou em disco se perde, e o canvas não guarda ' +
+                    'histórico para desfazer.\n\nFechar mesmo assim?'
+                )
+                if (!ok) return
+              }
+              closeTerminal(id)
+            }}
             className="p-1 rounded text-[#737B88] hover:text-[#D87979] hover:bg-[#242933] transition-colors"
             title="Fechar Terminal"
           >
