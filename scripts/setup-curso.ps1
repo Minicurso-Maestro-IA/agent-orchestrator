@@ -74,7 +74,13 @@ $config["agentMode"]         = "auto"
 $config["toolPermission"]    = "always-proceed"
 $config["trustedWorkspaces"] = @($pastaCompleta)
 
-$config | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Encoding UTF8
+# UTF-8 SEM BOM, na marra. O "Set-Content -Encoding UTF8" do PowerShell 5.1 -
+# o que vem no Windows - escreve BOM, e o agy e um binario Go: o parser de JSON
+# do Go nao pula BOM, ele recusa o arquivo inteiro com
+#   invalid character '\ufeff' looking for beginning of value
+# Resultado: a configuracao e ignorada e ninguem descobre o porque.
+$utf8SemBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($settingsPath, ($config | ConvertTo-Json -Depth 10), $utf8SemBom)
 Write-Host " agy liberado SOMENTE em: $pastaCompleta" -ForegroundColor Green
 Write-Host " Para reverter:  .\setup-curso.ps1 -Desfazer" -ForegroundColor Gray
 
