@@ -110,7 +110,7 @@ export function TopBar(): ReactElement {
             iFlow
           </span>
           <span className="text-[10px] font-mono text-[#737B88] px-1.5 py-0.5 bg-[#171A20] border border-[#262B34] rounded leading-none">
-            v1.0.0
+            v1.1.0
           </span>
         </div>
 

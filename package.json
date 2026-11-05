@@ -1,6 +1,6 @@
 {
   "name": "iflow",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Spatial 2D Canvas workspace running terminals and AI agents",
   "main": "./out/main/index.js",
   "author": "Eliandro",
@@ -59,7 +59,7 @@
         "portable",
         "dir"
       ],
-      "artifactName": "${productName}-${version}-portable.${ext}"
+      "artifactName": "${productName}-v${version}-win-${arch}-portable.${ext}"
     },
     "nsis": {
       "installerIcon": "resources/icon.ico",
