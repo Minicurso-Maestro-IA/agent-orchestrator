@@ -127,10 +127,13 @@ const orchestratorAPI: OrchestratorAPI = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('orchestrator', orchestratorAPI)
+    contextBridge.exposeInMainWorld('iflow', orchestratorAPI)
   } catch (error) {
     console.error('Failed to expose orchestrator API:', error)
   }
 } else {
   // @ts-ignore fallback
   window.orchestrator = orchestratorAPI
+  // @ts-ignore
+  window.iflow = orchestratorAPI
 }
