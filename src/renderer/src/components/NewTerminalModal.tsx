@@ -26,11 +26,11 @@ interface SectionProps {
 
 function Section({ icon, title, hint, children }: SectionProps): ReactElement {
   return (
-    <section className="space-y-2">
+    <section className="space-y-1.5">
       <div className="flex items-baseline gap-2">
-        <span className="text-sky-300">{icon}</span>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">{title}</h3>
-        {hint && <span className="text-[11px] text-slate-400">{hint}</span>}
+        <span className="text-[#A0A6B2]">{icon}</span>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#A0A6B2]">{title}</h3>
+        {hint && <span className="text-[11px] text-[#737B88]">{hint}</span>}
       </div>
       {children}
     </section>
@@ -52,23 +52,26 @@ function Choice({ active, disabled, onClick, badge, title, desc }: ChoiceProps):
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg text-left border transition-colors ${
+      className={`relative w-full flex items-start gap-2.5 p-2 rounded text-left border transition-colors duration-140 ${
         disabled
-          ? 'opacity-40 cursor-not-allowed border-transparent text-slate-400'
+          ? 'opacity-40 cursor-not-allowed border-[#262B34]/60 bg-[#14171D]/40 text-[#737B88]'
           : active
-            ? 'bg-sky-400/20 text-sky-50 border-sky-400/60'
-            : 'bg-slate-900/60 hover:bg-slate-700 text-slate-200 border-slate-700 hover:border-slate-600'
+            ? 'bg-[#242933] text-[#E6E8EC] border-[#5B9BD5] ring-1 ring-[#5B9BD5]/30'
+            : 'bg-[#1D2129] hover:bg-[#242933] text-[#A0A6B2] hover:text-[#E6E8EC] border-[#262B34] hover:border-[#303641]'
       }`}
     >
       {badge && (
-        <span className="font-mono text-[10px] bg-slate-950 px-1.5 py-0.5 rounded border border-slate-600 text-sky-300 mt-0.5 flex-shrink-0">
+        <span className="font-mono text-[10px] bg-[#14171D] px-1.5 py-0.5 rounded border border-[#262B34] text-[#A0A6B2] mt-0.5 flex-shrink-0">
           {badge}
         </span>
       )}
-      <span className="min-w-0">
+      <span className="min-w-0 flex-1">
         <span className="block text-xs font-medium truncate">{title}</span>
-        {desc && <span className="block text-[11px] text-slate-400 line-clamp-2">{desc}</span>}
+        {desc && <span className="block text-[11px] text-[#737B88] line-clamp-1">{desc}</span>}
       </span>
+      {active && !disabled && (
+        <span className="w-1.5 h-1.5 rounded-full bg-[#5B9BD5] mt-1.5 flex-shrink-0" />
+      )}
     </button>
   )
 }
@@ -100,8 +103,6 @@ export function NewTerminalModal(): ReactElement | null {
         e.preventDefault()
         setOpen(false)
       }
-      // Ctrl/Cmd+Enter cria sem precisar tirar a mão do teclado. Enter sozinho
-      // fica livre para navegar entre as opções.
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         confirmRef.current?.click()
@@ -120,7 +121,7 @@ export function NewTerminalModal(): ReactElement | null {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0C0E12]/80"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) setOpen(false)
       }}
@@ -129,26 +130,26 @@ export function NewTerminalModal(): ReactElement | null {
         role="dialog"
         aria-modal="true"
         aria-label="Novo terminal"
-        className="w-full max-w-3xl max-h-[88vh] flex flex-col bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl max-h-[85vh] flex flex-col bg-[#171A20] border border-[#303641] rounded shadow-2xl overflow-hidden"
       >
-        <header className="flex items-center justify-between px-5 py-3.5 border-b border-slate-600 bg-slate-800">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-[#262B34] bg-[#14171D]">
           <div>
-            <h2 className="text-sm font-bold text-white">Novo Terminal</h2>
-            <p className="text-[11px] text-slate-400">
-              Escolha o shell e, opcionalmente, uma IA com uma skill de contexto
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#E6E8EC]">Novo Terminal</h2>
+            <p className="text-[11px] text-[#737B88]">
+              Configure o shell de execução e vincule opcionalmente um agente ou skill
             </p>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
             title="Fechar (Esc)"
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-1 rounded text-[#737B88] hover:text-[#E6E8EC] hover:bg-[#242933] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <Section icon={<TerminalSquare className="w-3.5 h-3.5" />} title="Shell">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {SHELL_OPTIONS.map((o) => (
@@ -166,8 +167,8 @@ export function NewTerminalModal(): ReactElement | null {
 
           <Section
             icon={<Sparkles className="w-3.5 h-3.5" />}
-            title="IA"
-            hint="opcional — inicia a CLI dentro do shell"
+            title="Agente de IA"
+            hint="opcional — executa CLI assistida"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Choice
@@ -176,8 +177,8 @@ export function NewTerminalModal(): ReactElement | null {
                   setAgent(null)
                   setSkill(null)
                 }}
-                title="Nenhuma"
-                desc="Abre só o shell"
+                title="Nenhum"
+                desc="Terminal interativo comum"
               />
               {agents.map((a) => (
                 <Choice
@@ -193,14 +194,13 @@ export function NewTerminalModal(): ReactElement | null {
 
           <Section
             icon={<BookOpen className="w-3.5 h-3.5" />}
-            title="Skill"
-            hint={agentId ? 'carregada como primeiro prompt' : 'escolha uma IA primeiro'}
+            title="Skill de Contexto"
+            hint={agentId ? 'injetada como primeira instrução' : 'selecione um agente primeiro'}
           >
             {skills.length === 0 ? (
-              <p className="flex items-start gap-2 text-[11px] text-slate-400 bg-slate-900/60 border border-slate-700 rounded-lg p-2.5">
-                <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
-                Nenhuma skill encontrada. Crie arquivos <span className="font-mono">.md</span> na
-                pasta <span className="font-mono text-sky-300">skills/</span> do projeto.
+              <p className="flex items-start gap-2 text-[11px] text-[#737B88] bg-[#14171D] border border-[#262B34] rounded p-2.5">
+                <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px text-[#737B88]" />
+                Nenhuma skill encontrada em <span className="font-mono text-[#A0A6B2]">skills/</span>.
               </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -209,7 +209,7 @@ export function NewTerminalModal(): ReactElement | null {
                   disabled={!agentId}
                   onClick={() => setSkill(null)}
                   title="Nenhuma"
-                  desc="Inicia a IA sem contexto"
+                  desc="Inicia sem skill prévia"
                 />
                 {skills.map((s) => (
                   <Choice
@@ -226,29 +226,28 @@ export function NewTerminalModal(): ReactElement | null {
           </Section>
         </div>
 
-        <footer className="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-slate-600 bg-slate-900/60">
-          <p className="text-[11px] text-slate-400 min-w-0 truncate">
-            <span className="font-mono text-slate-200">{shell}</span>
+        <footer className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-[#262B34] bg-[#14171D]">
+          <p className="text-[11px] text-[#737B88] font-mono min-w-0 truncate">
+            <span className="text-[#A0A6B2]">{shell}</span>
             {agent && (
               <>
                 {' → '}
-                <span className="font-mono text-violet-300">{agent.command}</span>
+                <span className="text-[#9B8BCB]">{agent.command}</span>
               </>
             )}
             {agent && skill && (
               <>
-                {' + skill '}
-                <span className="text-sky-300">{skill.name}</span>
+                {' + '}
+                <span className="text-[#5B9BD5]">{skill.name}</span>
               </>
             )}
-            {agent?.install && <span className="text-slate-500"> · requer: {agent.install}</span>}
           </p>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="px-3 py-1.5 text-xs font-medium text-slate-200 hover:text-white bg-slate-700/80 hover:bg-slate-700 border border-slate-500/80 rounded-xl transition-colors"
+              className="h-7 px-3 text-xs text-[#A0A6B2] hover:text-[#E6E8EC] bg-[#171A20] hover:bg-[#1D2129] border border-[#262B34] rounded inline-flex items-center justify-center transition-colors duration-140"
             >
               Cancelar
             </button>
@@ -256,11 +255,11 @@ export function NewTerminalModal(): ReactElement | null {
               ref={confirmRef}
               type="button"
               onClick={create}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 rounded-xl shadow-lg shadow-sky-500/30 transition-all transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-sky-300"
+              className="h-7 px-3 text-xs font-medium text-white bg-[#5B9BD5] hover:bg-[#4E8BC4] rounded border border-[#6BAAE4]/30 shadow-sm inline-flex items-center gap-1.5 transition-colors duration-140"
             >
-              <Plus className="w-4 h-4" />
-              Criar terminal
-              <kbd className="ml-1 flex items-center gap-0.5 text-[10px] font-mono opacity-70">
+              <Plus className="w-3.5 h-3.5" />
+              <span>Criar terminal</span>
+              <kbd className="ml-1 text-[10px] font-mono opacity-80 inline-flex items-center">
                 <CornerDownLeft className="w-3 h-3" />
               </kbd>
             </button>

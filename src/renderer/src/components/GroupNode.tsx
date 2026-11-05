@@ -5,8 +5,7 @@ import { GroupNodeData } from '@shared/types'
 import { useTerminalStore } from '../store/terminalStore'
 
 /**
- * Moldura que agrupa terminais e documentos sob um título editável. Os nós de
- * dentro são filhos de verdade (parentId), então arrastar o grupo leva todos.
+ * Moldura industrial que agrupa nós sob um delimitador estrutural discreto.
  */
 function GroupNodeComponent({ id, data, selected }: NodeProps<Node<GroupNodeData>>): ReactElement {
   const renameGroup = useTerminalStore((s) => s.renameGroup)
@@ -30,20 +29,20 @@ function GroupNodeComponent({ id, data, selected }: NodeProps<Node<GroupNodeData
 
   return (
     <div
-      className={`w-full h-full rounded-2xl border-2 border-dashed transition-colors ${
-        selected ? 'border-indigo-300 bg-indigo-400/10' : 'border-indigo-400/50 bg-indigo-400/5'
+      className={`w-full h-full rounded-md border border-dashed transition-colors ${
+        selected ? 'border-[#5B9BD5]/60 bg-[#5B9BD5]/5' : 'border-[#303641] bg-[#171A20]/20'
       }`}
     >
       <NodeResizer
         minWidth={320}
         minHeight={240}
         isVisible={selected}
-        lineClassName="!border-indigo-300/70"
-        handleClassName="!w-3 !h-3 !bg-indigo-300 !border-2 !border-slate-900 !rounded"
+        lineClassName="!border-[#5B9BD5]/50"
+        handleClassName="!w-2 !h-2 !bg-[#5B9BD5] !border !border-[#0B0D11] !rounded-none"
       />
 
-      {/* Título pairando acima da moldura */}
-      <div className="group-drag-handle absolute -top-9 left-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-indigo-400/60 shadow-xl cursor-grab active:cursor-grabbing">
+      {/* Rótulo do Grupo */}
+      <div className="group-drag-handle absolute -top-8 left-0 flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#171A20] border border-[#262B34] shadow-md cursor-grab active:cursor-grabbing select-none">
         {editing ? (
           <input
             ref={inputRef}
@@ -59,24 +58,24 @@ function GroupNodeComponent({ id, data, selected }: NodeProps<Node<GroupNodeData
               }
               e.stopPropagation()
             }}
-            className="nodrag bg-slate-900 text-sm font-semibold text-white px-2 py-0.5 rounded border border-indigo-400 outline-none min-w-[160px]"
+            className="nodrag bg-[#0C0E12] text-xs font-medium text-[#E6E8EC] px-2 py-0.5 rounded border border-[#5B9BD5] outline-none min-w-[140px]"
           />
         ) : (
           <>
-            <span className="text-sm font-semibold text-indigo-100 whitespace-nowrap">
+            <span className="text-xs font-medium text-[#E6E8EC] whitespace-nowrap">
               {data.title}
             </span>
             <button
               onClick={() => setEditing(true)}
               title="Renomear grupo"
-              className="nodrag p-1 rounded text-indigo-200/70 hover:text-white hover:bg-slate-700 transition-colors"
+              className="nodrag p-0.5 rounded text-[#737B88] hover:text-[#E6E8EC] hover:bg-[#242933] transition-colors"
             >
               <Pencil className="w-3 h-3" />
             </button>
             <button
               onClick={() => removeNode(id)}
               title="Desfazer grupo (mantém os nós)"
-              className="nodrag p-1 rounded text-indigo-200/70 hover:text-red-300 hover:bg-red-500/20 transition-colors"
+              className="nodrag p-0.5 rounded text-[#737B88] hover:text-[#D87979] hover:bg-[#242933] transition-colors"
             >
               <X className="w-3 h-3" />
             </button>

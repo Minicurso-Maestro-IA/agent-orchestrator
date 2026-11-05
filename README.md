@@ -1,4 +1,4 @@
-# Agent Orchestrator 🛸
+# iFlow 🛸
 
 Workspace desktop com **Canvas Espacial 2D infinito** capaz de orquestrar múltiplos terminais nativos e agentes de IA em nós conectáveis e arrastáveis.
 
@@ -20,7 +20,7 @@ Workspace desktop com **Canvas Espacial 2D infinito** capaz de orquestrar múlti
 ## 📂 Arquitetura do Projeto
 
 ```
-agent-orchestrator/
+iflow/
 ├── src/
 │   ├── main/
 │   │   ├── index.ts                # Inicialização da janela Electron e ciclo de vida

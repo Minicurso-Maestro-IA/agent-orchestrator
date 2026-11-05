@@ -37,6 +37,9 @@ const orchestratorAPI: OrchestratorAPI = {
   sendPrompt: (id: string, text: string): Promise<boolean> => {
     return ipcRenderer.invoke('terminal:prompt', id, text)
   },
+  injectProtocol: (id: string): Promise<boolean> => {
+    return ipcRenderer.invoke('terminal:inject-protocol', id)
+  },
   notifyTerminal: (id: string, text: string): Promise<void> => {
     return ipcRenderer.invoke('terminal:notify', id, text)
   },
@@ -87,10 +90,13 @@ const orchestratorAPI: OrchestratorAPI = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('orchestrator', orchestratorAPI)
+    contextBridge.exposeInMainWorld('iflow', orchestratorAPI)
   } catch (error) {
     console.error('Failed to expose orchestrator API:', error)
   }
 } else {
   // @ts-ignore fallback
   window.orchestrator = orchestratorAPI
+  // @ts-ignore
+  window.iflow = orchestratorAPI
 }

@@ -9,8 +9,8 @@ import { EdgeCondition } from '@shared/types'
 import { CONDITION_COLORS, CONDITION_LABELS, useTerminalStore } from '../store/terminalStore'
 
 /**
- * Aresta do pipeline. O rótulo mostra em qual veredito ela dispara e cicla
- * entre sempre → aprovado → reprovado a cada clique.
+ * Aresta do pipeline: traço fino e preciso, rótulo compacto com fundo neutro
+ * e indicador funcional sem interferência luminosa.
  */
 export function ConditionEdge({
   id,
@@ -37,30 +37,45 @@ export function ConditionEdge({
     targetY,
     sourcePosition,
     targetPosition,
-    borderRadius: 12
+    borderRadius: 8
   })
 
   return (
     <>
       <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />
       <EdgeLabelRenderer>
-        <button
-          type="button"
+        {/* Zona de hover estável e ampliada: evita flicker ao passar o mouse perto da borda */}
+        <div
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
             e.stopPropagation()
             cycle(id)
           }}
-          title="Clique para alternar: sempre → aprovado → reprovado"
-          className="nodrag nopan absolute pointer-events-auto px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border shadow-lg transition-transform hover:scale-110 cursor-pointer"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              e.stopPropagation()
+              cycle(id)
+            }
+          }}
+          title="Clique para alternar condição: sempre → aprovado → reprovado"
+          className="nodrag nopan absolute flex items-center justify-center p-2.5 cursor-pointer select-none group"
           style={{
+            position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-            background: '#0f172a',
-            borderColor: color,
-            color
+            pointerEvents: 'all'
           }}
         >
-          {CONDITION_LABELS[condition]}
-        </button>
+          {/* Label compacta com fundo neutro e indicação funcional */}
+          <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono tracking-wide border border-[#262B34] bg-[#171A20] text-[#A0A6B2] shadow-sm transition-colors duration-140 group-hover:border-[#303641] group-hover:text-[#E6E8EC]">
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: color }}
+            />
+            {CONDITION_LABELS[condition]}
+          </span>
+        </div>
       </EdgeLabelRenderer>
     </>
   )

@@ -26,3 +26,7 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Scratch and temporary testing files
+scratch/
+

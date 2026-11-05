@@ -10,7 +10,7 @@ import {
   TerminalShell,
   AgentDefinition
 } from '@shared/types'
-import { findAgent } from './agent-registry'
+import { listAgents, findAgent } from './agent-registry'
 import { findSkill, readSkillBody } from './skill-registry'
 import { pipelineWatcher } from './pipeline-watcher'
 import { documentWatcher } from './document-watcher'
@@ -19,6 +19,7 @@ interface ActivePtySession {
   info: TerminalInfo
   ptyProcess: pty.IPty
   timers: NodeJS.Timeout[]
+  inputBuffer?: string
 }
 
 /** Espera no máximo isso pelo prompt do shell antes de mandar o comando mesmo assim. */
@@ -183,7 +184,7 @@ export class PtyManager extends EventEmitter {
       '### Mostrando um documento no canvas',
       '',
       'Se abrir um .md relevante (uma regra, uma especificação, um checklist) e quiser',
-      'que ele apareça no orquestrador, grave um JSON de nome único nesta pasta:',
+      'que ele apareça no iFlow, grave um JSON de nome único nesta pasta:',
       '',
       documentWatcher.announceDirFor(),
       '',
@@ -192,6 +193,10 @@ export class PtyManager extends EventEmitter {
   }
 
   /** Entrega um prompt a um agente já em execução. Usado pelo roteamento do pipeline. */
+  public injectProtocol(id: string): boolean {
+    return this.sendPrompt(id, this.protocolText(id))
+  }
+
   public sendPrompt(id: string, text: string): boolean {
     const session = this.sessions.get(id)
     if (!session) return false
@@ -257,8 +262,30 @@ export class PtyManager extends EventEmitter {
 
   public write(id: string, data: string): void {
     const session = this.sessions.get(id)
-    if (session) {
-      session.ptyProcess.write(data)
+    if (!session) return
+
+    session.ptyProcess.write(data)
+
+    if (!session.info.agentId) {
+      if (data.includes('\r') || data.includes('\n')) {
+        const fullLine = ((session.inputBuffer || '') + data).trim().toLowerCase()
+        session.inputBuffer = ''
+        const matched = listAgents().find(
+          (a) => fullLine === a.command.toLowerCase() || fullLine.startsWith(a.command.toLowerCase() + ' ')
+        )
+        if (matched) {
+          session.info.agentId = matched.id
+          session.info.agentLabel = matched.label
+          session.timers.push(
+            setTimeout(() => {
+              this.injectProtocol(id)
+            }, matched.readyDelayMs ?? 4000)
+          )
+        }
+      } else if (!data.startsWith('\x1b')) {
+        session.inputBuffer = (session.inputBuffer || '') + data
+        if (session.inputBuffer.length > 256) session.inputBuffer = ''
+      }
     }
   }
 

@@ -20,13 +20,13 @@ const BUILT_IN: AgentDefinition[] = [
     install: 'npm i -g @anthropic-ai/claude-code'
   },
   {
-    id: 'gemini',
-    label: 'Gemini CLI',
-    command: 'gemini',
+    id: 'antigravity',
+    label: 'Antigravity CLI',
+    command: 'agy',
     delivery: 'paste',
     readyDelayMs: 4000,
-    description: 'CLI do Google Gemini',
-    install: 'npm i -g @google/gemini-cli'
+    description: 'CLI do Google Antigravity',
+    install: 'npm i -g agy'
   },
   {
     id: 'codex',
@@ -43,6 +43,8 @@ function candidateFiles(): string[] {
   return [
     process.env.AGENT_ORCHESTRATOR_AGENTS_FILE,
     path.join(process.cwd(), 'agents.json'),
+    // O .exe portátil se extrai numa pasta temporária; esta é a pasta onde ele de fato está.
+    process.env.PORTABLE_EXECUTABLE_DIR && path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'agents.json'),
     path.join(app.getAppPath(), 'agents.json'),
     path.join(path.dirname(app.getPath('exe')), 'agents.json')
   ].filter((f): f is string => !!f)

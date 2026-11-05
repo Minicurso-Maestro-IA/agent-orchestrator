@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Stepped workflow connections with 90-degree mathematical rotational symmetry -->
+  <path d="M5.5 8v2a2 2 0 0 0 2 2h0.5" stroke="#00D2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 5.5h-2a2 2 0 0 0-2 2v0.5" stroke="#00D2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18.5 16v-2a2 2 0 0 0-2-2h-0.5" stroke="#00D2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M8 18.5h2a2 2 0 0 0 2-2v-0.5" stroke="#00D2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Central Orchestrator Core -->
+  <rect x="8" y="8" width="8" height="8" rx="2" fill="#0A192F" stroke="#00D2FF" stroke-width="2"/>
+  <circle cx="12" cy="12" r="1.5" fill="#00D2FF"/>
+  <!-- 4 AI Agent Nodes -->
+  <rect x="3" y="3" width="5" height="5" rx="1.5" fill="#00D2FF"/>
+  <rect x="16" y="3" width="5" height="5" rx="1.5" fill="#00D2FF"/>
+  <rect x="3" y="16" width="5" height="5" rx="1.5" fill="#00D2FF"/>
+  <rect x="16" y="16" width="5" height="5" rx="1.5" fill="#00D2FF"/>
+</svg>

@@ -18,6 +18,8 @@ function candidateDirs(): string[] {
   const dirs = [
     process.env.AGENT_ORCHESTRATOR_SKILLS_DIR,
     path.join(process.cwd(), 'skills'),
+    // O .exe portátil se extrai numa pasta temporária; esta é a pasta onde ele de fato está.
+    process.env.PORTABLE_EXECUTABLE_DIR && path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'skills'),
     path.join(app.getAppPath(), 'skills'),
     path.join(path.dirname(app.getPath('exe')), 'skills')
   ]

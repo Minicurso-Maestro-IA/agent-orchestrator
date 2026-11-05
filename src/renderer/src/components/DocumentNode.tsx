@@ -12,9 +12,9 @@ const HANDLE_SIDES = [
 ] as const
 
 const ORIGIN_LABEL: Record<string, string> = {
-  disk: 'detectado no disco',
-  agent: 'anunciado pelo agente',
-  manual: 'criado por você'
+  disk: 'disco',
+  agent: 'agente',
+  manual: 'manual'
 }
 
 function DocumentNodeComponent({
@@ -26,16 +26,16 @@ function DocumentNodeComponent({
 
   return (
     <div
-      className={`relative flex flex-col w-full h-full rounded-xl bg-slate-900 border-2 shadow-2xl overflow-hidden group transition-shadow ${
-        selected ? 'border-amber-300 ring-2 ring-amber-300/40' : 'border-amber-500/50 hover:border-amber-400/80'
+      className={`relative flex flex-col w-full h-full rounded-md bg-[#0E1014] border transition-colors duration-150 overflow-hidden group shadow-md ${
+        selected ? 'border-[#D6A45D] ring-1 ring-[#D6A45D]/50' : 'border-[#262B34] hover:border-[#303641]'
       }`}
     >
       <NodeResizer
         minWidth={280}
         minHeight={180}
         isVisible={selected}
-        lineClassName="!border-amber-300/70"
-        handleClassName="!w-3 !h-3 !bg-amber-300 !border-2 !border-slate-900 !rounded"
+        lineClassName="!border-[#D6A45D]/60"
+        handleClassName="!w-2 !h-2 !bg-[#D6A45D] !border !border-[#0E1014] !rounded-none"
       />
 
       {HANDLE_SIDES.map((side) => (
@@ -45,46 +45,50 @@ function DocumentNodeComponent({
           position={side.position}
           id={side.id}
           title="Ligue a um terminal para injetar como contexto"
-          className="!w-3.5 !h-3.5 !bg-amber-400 hover:!bg-amber-300 !border-2 !border-slate-900 !rounded-full transition-transform hover:scale-150 shadow-lg"
+          className="!w-2 !h-2 !bg-[#1D2129] hover:!bg-[#D6A45D] !border !border-[#303641] hover:!border-[#D6A45D] !rounded-none transition-colors"
         />
       ))}
 
-      <div className="document-drag-handle flex items-center justify-between px-3 py-2 bg-amber-500/15 border-b border-amber-500/40 cursor-grab active:cursor-grabbing select-none">
+      {/* Cabeçalho do Documento */}
+      <div className="document-drag-handle h-8 px-2.5 bg-[#171A20] border-b border-[#262B34] flex items-center justify-between cursor-grab active:cursor-grabbing select-none">
         <div className="flex items-center gap-2 min-w-0">
-          <FileText className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
-          <span className="text-xs font-semibold text-amber-50 truncate" title={data.path}>
+          <FileText className="w-3.5 h-3.5 text-[#D6A45D] flex-shrink-0" />
+          <span className="text-xs font-medium text-[#E6E8EC] truncate" title={data.path}>
             {data.name}
           </span>
           {data.origin && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded border leading-none bg-slate-900/60 text-amber-200/80 border-amber-500/40 flex-shrink-0 hidden sm:inline">
+            <span className="text-[10px] font-mono text-[#737B88] px-1 py-0.2 rounded bg-[#14171D] border border-[#262B34] flex-shrink-0 hidden sm:inline">
               {ORIGIN_LABEL[data.origin] || data.origin}
             </span>
           )}
         </div>
         <button
           onClick={() => removeNode(id)}
-          className="p-1 rounded text-amber-200/70 hover:text-red-300 hover:bg-red-500/20 transition-colors flex-shrink-0"
-          title="Remover do canvas (não apaga o arquivo)"
+          className="p-1 rounded text-[#737B88] hover:text-[#D87979] hover:bg-[#242933] transition-colors flex-shrink-0"
+          title="Remover do canvas"
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
+      {/* Intenção do Agente (Contextual e Compacta) */}
       {data.intent && (
-        <div className="flex items-start gap-1.5 px-3 py-1.5 bg-slate-800/80 border-b border-slate-700 text-[11px] text-slate-300">
-          <Sparkles className="w-3 h-3 text-amber-300 flex-shrink-0 mt-0.5" />
-          <span className="min-w-0">{data.intent}</span>
+        <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-[#14171D] border-b border-[#262B34] text-[11px] text-[#A0A6B2]">
+          <Sparkles className="w-3 h-3 text-[#D6A45D] flex-shrink-0 mt-0.5" />
+          <span className="min-w-0 line-clamp-2">{data.intent}</span>
         </div>
       )}
 
-      <pre className="nodrag nowheel flex-1 w-full min-h-0 m-0 p-3 overflow-auto bg-[#131c2e] text-[12px] leading-relaxed text-slate-200 font-mono whitespace-pre-wrap break-words">
+      {/* Conteúdo Técnico */}
+      <pre className="nodrag nowheel flex-1 w-full min-h-0 m-0 p-3 overflow-auto bg-[#0E1014] text-xs leading-relaxed text-[#A0A6B2] font-mono whitespace-pre-wrap break-words">
         {data.content || '(vazio)'}
       </pre>
 
+      {/* Indicador de Conteúdo Truncado */}
       {data.truncated && (
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 border-t border-slate-700 text-[10px] text-slate-400">
-          <Eye className="w-3 h-3" />
-          Exibindo apenas o início do arquivo
+        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#14171D] border-t border-[#262B34] text-[10px] text-[#737B88]">
+          <Eye className="w-3 h-3 flex-shrink-0" />
+          <span>Exibindo apenas o início do arquivo</span>
         </div>
       )}
     </div>

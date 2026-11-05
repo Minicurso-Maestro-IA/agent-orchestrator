@@ -17,6 +17,7 @@ import {
   SkillInfo,
   AgentDefinition,
   EdgeCondition,
+  PipelineStatus,
   PipelineStatusEvent,
   DocumentNodeData,
   DocumentEvent,
@@ -44,9 +45,9 @@ export interface SpawnContext {
 }
 
 export const CONDITION_COLORS: Record<EdgeCondition, string> = {
-  always: '#38bdf8',
-  approved: '#34d399',
-  rejected: '#fb7185'
+  always: '#5B9BD5',
+  approved: '#62B58A',
+  rejected: '#D87979'
 }
 
 export const CONDITION_LABELS: Record<EdgeCondition, string> = {
@@ -61,8 +62,8 @@ const MAX_HOPS = 20
 export function edgeVisuals(condition: EdgeCondition): Record<string, unknown> {
   const color = CONDITION_COLORS[condition]
   return {
-    style: { stroke: color, strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color }
+    style: { stroke: color, strokeWidth: 1.5 },
+    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color }
   }
 }
 
@@ -92,6 +93,7 @@ interface TerminalState {
   resumePipeline: () => void
   cycleEdgeCondition: (edgeId: string) => void
   handlePipelineStatus: (event: PipelineStatusEvent) => Promise<void>
+  injectProtocol: (terminalId: string) => Promise<void>
   handleDocumentEvent: (event: DocumentEvent) => void
   createDocumentNode: (name: string) => Promise<void>
   createGroup: () => void
@@ -142,6 +144,14 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   pipelineHops: 0,
 
   setNewTerminalOpen: (open: boolean) => set({ newTerminalOpen: open }),
+  injectProtocol: async (terminalId: string) => {
+    const api = typeof window !== 'undefined' ? window.orchestrator : undefined
+    if (!api) return
+    const ok = await api.injectProtocol(terminalId)
+    if (ok) {
+      await api.notifyTerminal(terminalId, '▸ Protocolo de orquestração injetado no terminal com sucesso.')
+    }
+  },
   resumePipeline: () => set({ pipelineHalted: false, pipelineHops: 0 }),
   setSelectedShell: (shell: TerminalShell) => set({ selectedShell: shell }),
   setSelectedAgent: (id: string | null) => set({ selectedAgentId: id }),
@@ -175,9 +185,19 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const { nodes } = get()
     const source = nodes.find((n) => n.id === connection.source)
     const target = nodes.find((n) => n.id === connection.target)
-    if (!source || !target || !isDocument(source) || !isTerminal(target)) return
+    if (!source || !target) return
 
-    const api = window.orchestrator
+    const api = typeof window !== 'undefined' ? window.orchestrator : undefined
+
+    if (isTerminal(source) && isTerminal(target)) {
+      if (!source.data.agentLabel) {
+        api?.injectProtocol(source.id)
+      }
+      return
+    }
+
+    if (!isDocument(source) || !isTerminal(target)) return
+
     if (!api || !target.data.active) return
 
     const prompt = [

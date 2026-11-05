@@ -1,11 +1,36 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, nativeImage } from 'electron'
 import { join } from 'path'
+import * as fs from 'fs'
 import { registerTerminalIpc } from './ipc/terminal.ipc'
 import { ptyManager } from './core/pty-manager'
 
 let mainWindow: BrowserWindow | null = null
 
+function getAppIcon(): string {
+  const isWin = process.platform === 'win32'
+  const iconName = isWin ? 'icon.ico' : 'icon.png'
+
+  const candidates = [
+    join(__dirname, '../../resources', iconName),
+    join(__dirname, '../../resources', 'icon.png'),
+    join(process.resourcesPath || '', 'resources', iconName),
+    join(process.resourcesPath || '', iconName),
+    join(__dirname, '../../build', iconName)
+  ]
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  return candidates[0]
+}
+
 function createWindow(): void {
+  const iconPath = getAppIcon()
+  const appIcon = nativeImage.createFromPath(iconPath)
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -13,8 +38,15 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#090d16',
-    title: 'Agent Orchestrator - Spatial Canvas',
+    backgroundColor: '#101216',
+    title: 'iFlow',
+    icon: appIcon.isEmpty() ? iconPath : appIcon,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: process.platform === 'win32' ? {
+      color: '#14171D',
+      symbolColor: '#A0A6B2',
+      height: 44
+    } : false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -47,7 +79,12 @@ function createWindow(): void {
   })
 }
 
+app.setName('iFlow')
+
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.minicurso.iflow')
+  }
   createWindow()
 
   app.on('activate', () => {
