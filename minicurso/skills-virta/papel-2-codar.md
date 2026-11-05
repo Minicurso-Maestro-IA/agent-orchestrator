@@ -18,7 +18,32 @@ Depois de você vem um revisor, que lê a mesma especificação e o seu diff.
 3. Escreva testes que cubram cada item do *Pronto quando*, com os números que
    estão lá, e as bordas: o menor valor, o maior, o valor exato do limite, zero.
 4. Rode os testes. Se algum falhar, conserte antes de terminar.
-5. Releia o seu `git diff`. Você entende cada linha? Apagou algo sem querer?
+5. Releia o que você mudou. Você entende cada linha? Apagou algo sem querer?
+   Em arquivo **novo**, `git diff` não mostra nada — use `git status` para listar
+   o que você criou e releia cada arquivo.
+
+## Sem runner de testes na pasta
+
+Se não existir `package.json` com `npm test`, **não instale nada**. O Node já
+traz um runner: escreva `*.test.js` com `node:test` e `node:assert/strict`, e
+rode `node --test`. É um arquivo só, sem dependência — e o revisor roda o mesmo
+comando.
+
+## Quando o trabalho volta reprovado
+
+Se a mensagem diz que o revisor **REPROVOU**, o código já existe: é uma rodada de
+correção, não um recomeço.
+
+1. Releia o `ESPECIFICACAO.md` — a seção `# Rodada N` no fim diz o que mudou.
+2. **Escreva primeiro um teste que reproduz o que o revisor apontou** e confirme
+   que ele falha. Teste que nunca falhou não prova que você consertou algo.
+3. Corrija com a menor mudança possível. Não reescreva o arquivo.
+4. Rode **todos** os testes, não só o novo: consertar um ponto quebra outro com
+   frequência.
+5. **Nunca apague ou afrouxe um teste para ele passar.** Se um teste antigo
+   contradiz a especificação nova, diga isso no `reason` e troque o teste
+   explicitamente.
+6. No `reason`, diga ponto por ponto o que você fez para cada item reprovado.
 
 ## Quando a especificação não bastar
 

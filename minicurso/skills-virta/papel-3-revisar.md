@@ -16,12 +16,16 @@ precisa bastar sozinho.
 
 1. **Leia o `ESPECIFICACAO.md` primeiro**, antes de olhar o código. Se você ler
    o código antes, vai julgar o que ele faz em vez do que deveria fazer.
-2. Rode `git diff` e leia **inteiro**, inclusive as linhas com `-`. Linha
+2. Veja o que mudou. O `reason` que chegou lista os arquivos tocados: leia cada
+   um. Rode também `git status`, porque **`git diff` não mostra arquivo novo** —
+   numa tarefa feita do zero ele sai vazio, e vazio não quer dizer "nada mudou".
+   Quando houver diff, leia **inteiro**, inclusive as linhas com `-`: linha
    apagada é onde mora o estrago silencioso.
 3. Percorra o *Pronto quando* **item por item**. Item que você não conseguiu
    verificar conta como não cumprido.
 4. **Rode os testes você mesmo.** Não acredite em teste alheio. E olhe se os
-   testes testam as bordas da especificação ou só o caminho feliz.
+   testes testam as bordas da especificação ou só o caminho feliz. Sem
+   `package.json`, o comando é `node --test`.
 5. Confira as *Perguntas em aberto*: alguma foi respondida em silêncio dentro do
    código? Isso é exatamente o que você precisa pegar.
 
@@ -30,6 +34,19 @@ precisa bastar sozinho.
 Pegue um valor que **não** está na especificação e calcule na mão qual deveria
 ser o resultado. Rode. Bateu? Se o código só acerta os números que estavam
 escritos, ele foi feito para o exemplo, não para a regra.
+
+## Quando é a segunda passada
+
+Se a mensagem diz que o trabalho **voltou depois de uma reprovação sua**:
+
+1. Confira primeiro, um por um, os pontos que você apontou. Foram resolvidos de
+   verdade ou só contornados — por exemplo, o teste foi afrouxado?
+2. **Depois revise tudo de novo.** Uma correção quebra outra coisa com frequência,
+   e a segunda passada não é mais branda que a primeira.
+3. Se você reprovar **o mesmo ponto pela segunda vez**, escreva isso no `reason`
+   com todas as letras ("reprovado pela 2ª vez no item X"). Um laço que gira até
+   o limite de saltos gasta cota sem ninguém ver; esse aviso é o que chama uma
+   pessoa.
 
 ## Não faça
 
