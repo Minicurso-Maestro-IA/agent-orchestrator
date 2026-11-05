@@ -1,5 +1,11 @@
 # Tarefas da aula
 
+> **Estas skills não aparecem mais no seletor padrão.** O exercício da turma
+> passou para o virta (as tarefas são issues em `virta-minicurso`), e oito
+> tarefas de um projeto que o aluno não abre só confundiam a lista. Os arquivos
+> foram movidos para `minicurso/skills-projeto-exemplo/`. Para tê-los de volta
+> no seletor: `.\iniciar.ps1 -Skills minicurso\skills-projeto-exemplo`.
+
 Oito tarefas sobre o projeto em `minicurso/projeto-exemplo/`, quatro de frontend
 e quatro de backend. Cada uma é uma **skill** do orquestrador: o aluno escolhe no
 seletor **Skill** ao criar o terminal, e o agente recebe o texto como primeiro

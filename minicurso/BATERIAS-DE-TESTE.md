@@ -20,10 +20,10 @@ Três terminais, nesta ordem, cada um com a sua skill:
 Arestas: **1 → 2 (aprovado)**, **2 → 3 (aprovado)**, **3 → 1 (reprovado)**.
 Clique no rótulo de cada linha para trocar a condição.
 
-Aponte a pasta de trabalho antes de abrir o app:
+Os três papéis já estão na lista de skills padrão (`skills\`), então não há
+nada a apontar para eles. Só a pasta de trabalho:
 
 ```powershell
-$env:AGENT_ORCHESTRATOR_SKILLS_DIR  = "$orq\minicurso\skills-virta"
 $env:AGENT_ORCHESTRATOR_TERMINAL_CWD = "$orq\minicurso\bateria-1-descontos"
 npm run dev
 ```

@@ -12,11 +12,15 @@
     Branch a usar. Padrao: integracao.
 .PARAMETER Pasta
     Pasta de trabalho dos terminais. Padrao: a bateria 1.
+.PARAMETER Skills
+    Pasta de skills alternativa. Padrao: skills\ do repositorio. Util para
+    oferecer as tarefas do virta: -Skills minicurso\skills-virta
 #>
 param(
     [string]$Branch = "integracao",
     [string]$Pasta,
-    [string]$Raiz
+    [string]$Raiz,
+    [string]$Skills
 )
 
 $ErrorActionPreference = "Stop"
@@ -80,10 +84,13 @@ if (-not (Test-Path (Join-Path $raiz 'node_modules'))) {
 }
 
 if (-not $Pasta) { $Pasta = Join-Path $raiz 'minicurso\bateria-1-descontos' }
-$env:AGENT_ORCHESTRATOR_SKILLS_DIR   = Join-Path $raiz 'minicurso\skills-virta'
+# Sem -Skills, o app usa a pasta skills\ do repositorio, que ja traz os tres
+# papeis do pipeline (1, 2 e 3) e as tres skills genericas.
+if ($Skills) { $env:AGENT_ORCHESTRATOR_SKILLS_DIR = $Skills }
 $env:AGENT_ORCHESTRATOR_TERMINAL_CWD = $Pasta
 
 Passo "Abrindo o iFlow"
-Write-Host "    skills:   $env:AGENT_ORCHESTRATOR_SKILLS_DIR"
+$dirSkills = if ($env:AGENT_ORCHESTRATOR_SKILLS_DIR) { $env:AGENT_ORCHESTRATOR_SKILLS_DIR } else { Join-Path $raiz 'skills' }
+Write-Host "    skills:   $dirSkills"
 Write-Host "    trabalho: $env:AGENT_ORCHESTRATOR_TERMINAL_CWD"
 npm run dev

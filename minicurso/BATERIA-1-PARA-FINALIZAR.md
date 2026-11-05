@@ -256,7 +256,7 @@ pipeline não é confiável para ir às mãos de 30 alunos sem o professor ao la
 |---|---|
 | Roteiro das duas baterias | `minicurso/BATERIAS-DE-TESTE.md` |
 | Montagem do pipeline | `minicurso/PIPELINE-3-AGENTES.md` |
-| As skills dos três papéis | `minicurso/skills-virta/papel-{1,2,3}-*.md` |
+| As skills dos três papéis | `skills/papel-{1,2,3}-*.md` (já aparecem no seletor) |
 | Medir a obediência do `agy` | `minicurso/medir-agy.mjs` |
 | Contexto completo do projeto | `CONTEXTO-COMPLETO.md` |
 | Pendências fora da bateria | `O-QUE-FALTA.md` |

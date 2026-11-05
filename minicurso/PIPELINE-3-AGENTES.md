@@ -30,11 +30,9 @@ que apurou, e é exatamente a dificuldade que a aula quer mostrar.
 
 ## Antes de abrir o app
 
-1. Aponte as skills para esta pasta e abra o orquestrador **numa janela nova**:
-
-   ```
-   setx AGENT_ORCHESTRATOR_SKILLS_DIR C:\minicurso\orquestrador\skills-virta
-   ```
+1. Abra o orquestrador. Os três papéis (`papel-1-especificar`, `papel-2-codar`,
+   `papel-3-revisar`) já estão na pasta `skills\` e aparecem no seletor — não há
+   variável de ambiente a configurar.
 
 2. Rode `agy` uma vez na mão, dentro da pasta do projeto, e faça o login com a
    conta do Google. Enquanto o assistente de primeiro uso estiver na tela, o

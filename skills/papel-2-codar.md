@@ -19,8 +19,9 @@ Depois de você vem um revisor, que lê a mesma especificação e o seu diff.
    estão lá, e as bordas: o menor valor, o maior, o valor exato do limite, zero.
 4. Rode os testes. Se algum falhar, conserte antes de terminar.
 5. Releia o que você mudou. Você entende cada linha? Apagou algo sem querer?
-   Em arquivo **novo**, `git diff` não mostra nada — use `git status` para listar
-   o que você criou e releia cada arquivo.
+   Em arquivo **novo**, `git diff` não mostra nada: liste o que você criou
+   (`git status`, ou `Get-ChildItem` se a pasta não for um repositório git) e
+   releia cada arquivo.
 
 ## Sem runner de testes na pasta
 

@@ -17,8 +17,10 @@ precisa bastar sozinho.
 1. **Leia o `ESPECIFICACAO.md` primeiro**, antes de olhar o código. Se você ler
    o código antes, vai julgar o que ele faz em vez do que deveria fazer.
 2. Veja o que mudou. O `reason` que chegou lista os arquivos tocados: leia cada
-   um. Rode também `git status`, porque **`git diff` não mostra arquivo novo** —
-   numa tarefa feita do zero ele sai vazio, e vazio não quer dizer "nada mudou".
+   um. **`git diff` não mostra arquivo novo** — numa tarefa feita do zero ele sai
+   vazio, e vazio não quer dizer "nada mudou". Liste a pasta com `git status`, ou
+   com `Get-ChildItem` se ela não for um repositório git (nem toda pasta de
+   trabalho é).
    Quando houver diff, leia **inteiro**, inclusive as linhas com `-`: linha
    apagada é onde mora o estrago silencioso.
 3. Percorra o *Pronto quando* **item por item**. Item que você não conseguiu
