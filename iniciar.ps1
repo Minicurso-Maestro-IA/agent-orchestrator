@@ -15,29 +15,53 @@
 #>
 param(
     [string]$Branch = "integracao",
-    [string]$Pasta
+    [string]$Pasta,
+    [string]$Raiz
 )
 
 $ErrorActionPreference = "Stop"
 function Passo($t) { Write-Host "`n==> $t" -ForegroundColor Cyan }
 function Ok($t)    { Write-Host "    OK  $t" -ForegroundColor Green }
 
+if ($Raiz) { $raiz = $Raiz }
 Passo "Procurando o repositorio"
-$raiz = $null
+if (-not $Raiz) { $raiz = $null }
 $aqui = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
-if (Test-Path (Join-Path $aqui 'electron.vite.config.ts')) {
-    $raiz = $aqui
-} else {
+
+# Candidatos obvios primeiro: e instantaneo, e cobre quase todo mundo.
+$tentativas = @(
+    $aqui,
+    (Join-Path $aqui '..'),
+    "$HOME\WebstormProjects\agent-orchestrator",
+    "$HOME\agent-orchestrator",
+    "$HOME\Documents\agent-orchestrator",
+    "$HOME\source\repos\agent-orchestrator",
+    "C:\minicurso\orquestrador",
+    "C:\minicurso\agent-orchestrator"
+)
+foreach ($t in $tentativas) {
+    if ($t -and (Test-Path (Join-Path $t 'electron.vite.config.ts'))) { $raiz = (Resolve-Path $t).Path; break }
+}
+
+# So entao a varredura - pulando node_modules, que e o que fazia isto demorar
+# minutos sem imprimir nada e parecer travamento.
+if (-not $raiz) {
+    Write-Host "    procurando (pode levar um minuto)..." -ForegroundColor Gray
     foreach ($base in @($HOME, 'C:\minicurso')) {
         if (-not (Test-Path $base)) { continue }
-        $achado = Get-ChildItem -Path $base -Filter 'electron.vite.config.ts' -Recurse -Depth 5 -ErrorAction SilentlyContinue |
-                  Where-Object { Test-Path (Join-Path $_.DirectoryName 'agents.json') } |
+        $achado = Get-ChildItem -Path $base -Directory -Recurse -Depth 4 -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Name -ne 'node_modules' -and (Test-Path (Join-Path $_.FullName 'electron.vite.config.ts')) } |
                   Select-Object -First 1
-        if ($achado) { $raiz = $achado.DirectoryName; break }
+        if ($achado) { $raiz = $achado.FullName; break }
     }
 }
+
 if (-not $raiz) {
-    throw "Nao achei o repositorio. Rode este script de dentro da pasta dele, ou passe -Pasta."
+    Write-Host ""
+    Write-Host "Nao achei o repositorio." -ForegroundColor Red
+    Write-Host "Rode este script de dentro da pasta dele, ou diga onde esta:" -ForegroundColor Yellow
+    Write-Host "  .\iniciar.ps1 -Raiz C:\caminho\do\agent-orchestrator" -ForegroundColor Yellow
+    exit 1
 }
 Ok $raiz
 Set-Location $raiz
