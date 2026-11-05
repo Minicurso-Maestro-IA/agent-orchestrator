@@ -46,7 +46,7 @@ Crie três terminais, cada um com a skill do seu papel:
 
 | Nó | Skill | Agente |
 |---|---|---|
-| 1 | Papel 1 — Validar a tarefa | Antigravity CLI |
+| 1 | Papel 1 — Especificar | Antigravity CLI |
 | 2 | Papel 2 — Codar | Antigravity CLI |
 | 3 | Papel 3 — Revisar | Antigravity CLI |
 

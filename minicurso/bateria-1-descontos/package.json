@@ -1,0 +1,10 @@
+{
+  "name": "bateria-1-descontos",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Pasta vazia de proposito: o agente escreve o codigo e os testes aqui.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
