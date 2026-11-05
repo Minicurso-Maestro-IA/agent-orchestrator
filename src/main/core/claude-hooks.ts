@@ -19,7 +19,6 @@ import { app } from 'electron'
  * configuração global de quem o instalou.
  */
 
-const HOOK_STOP = 'claude-stop.cjs'
 const HOOK_TRACE = 'claude-trace.cjs'
 
 /** Mesma ordem de busca do skill-registry: projeto, app empacotado, lado do exe. */
@@ -31,7 +30,7 @@ function candidateScripts(nome: string): string[] {
   ]
 }
 
-export function resolveHookScript(nome = HOOK_STOP): string | null {
+export function resolveHookScript(nome: string): string | null {
   for (const file of candidateScripts(nome)) {
     try {
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return file
@@ -48,12 +47,14 @@ export function resolveHookScript(nome = HOOK_STOP): string | null {
  * pipeline volta a depender de o agente gravar o status por conta própria.
  */
 export function writeClaudeSettings(terminalId: string): string | null {
-  const script = resolveHookScript(HOOK_STOP)
-  if (!script) {
-    console.warn(`[ClaudeHooks] ${HOOK_STOP} não encontrado; o agente sobe sem o hook de status.`)
-    return null
-  }
-  // O rastro é opcional: sem ele o pipeline funciona, só o nó fica menos legível.
+  // O hook Stop (claude-stop.cjs) NÃO é mais registrado. Ele gravava `approved`
+  // sozinho a cada fim de turno sem status — e o pipeline agora tem turnos que
+  // terminam sem status de propósito: o "Pronto. Aguardando a tarefa." do
+  // primeiro prompt, e o agente que para para perguntar algo à pessoa. Com o
+  // hook, os dois viravam aprovação e mandavam trabalho adiante sem resposta.
+  // Havia também uma corrida: o watcher apaga o status ao lê-lo, e o hook,
+  // rodando depois, achava o arquivo ausente e gravava um segundo `approved`.
+  // Sem o hook, o Claude Code depende de obediência ao protocolo, como o agy.
   const trace = resolveHookScript(HOOK_TRACE)
 
   try {
@@ -61,23 +62,19 @@ export function writeClaudeSettings(terminalId: string): string | null {
     fs.mkdirSync(dir, { recursive: true })
     const file = path.join(dir, `${terminalId}.settings.json`)
 
-    // O hook herda o ambiente do PTY, que já carrega ORCHESTRATOR_STATUS_FILE:
-    // é assim que o script sabe onde gravar, sem precisar de argumento.
+    // Edições de arquivo aceitas sem pergunta, mas só na pasta de trabalho e nas
+    // duas pastas do protocolo (status e anúncios), que ficam fora dela. Sem
+    // isso, gravar o status pedia confirmação e o pipeline parava esperando um
+    // clique. Comandos (Bash) continuam pedindo permissão.
+    const pipelineDir = path.join(app.getPath('userData'), 'pipeline-status')
     const settings: {
       hooks: Record<string, unknown[]>
+      permissions: { defaultMode: string; additionalDirectories: string[] }
     } = {
-      hooks: {
-        Stop: [
-          {
-            hooks: [
-              {
-                type: 'command',
-                command: `node ${JSON.stringify(script)}`,
-                timeout: 15
-              }
-            ]
-          }
-        ]
+      hooks: {},
+      permissions: {
+        defaultMode: 'acceptEdits',
+        additionalDirectories: [pipelineDir, path.join(pipelineDir, 'events')]
       }
     }
 

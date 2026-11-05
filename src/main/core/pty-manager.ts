@@ -44,6 +44,20 @@ const PROMPT_CHUNK_MIN_LEN = 20
  */
 const QUIET_MS = 1200
 
+/**
+ * Fecho do prompt de um agente que recebeu o papel sem tarefa. A tarefa chega
+ * depois — digitada no terminal, ou entregue pelo pipeline — e ele precisa já
+ * estar com o papel e o protocolo na cabeça quando ela chegar.
+ */
+const AGUARDE_TAREFA = [
+  '## Agora: espere a tarefa',
+  '',
+  'Ainda não há tarefa. NÃO leia arquivos, NÃO explore a pasta e NÃO comece nada.',
+  'Responda apenas: "Pronto. Aguardando a tarefa." — e pare.',
+  'A próxima mensagem que chegar é a tarefa: trate-a seguindo o seu papel acima e',
+  'termine gravando o arquivo de status do protocolo.'
+].join('\n')
+
 export class PtyManager extends EventEmitter {
   private sessions = new Map<string, ActivePtySession>()
 
@@ -223,6 +237,10 @@ export class PtyManager extends EventEmitter {
       'Se você não está revisando nada, use "approved" ao terminar sua parte.',
       'Grave o arquivo mesmo que a tarefa tenha falhado, explicando o motivo em "reason".',
       '',
+      'EXCEÇÃO: se você precisa de uma resposta da pessoa para continuar, NÃO grave o',
+      'arquivo. Faça a pergunta aqui no terminal e espere a resposta. Gravar o status',
+      'passa o trabalho adiante na hora — o próximo agente seguiria sem a resposta.',
+      '',
       '### Mostrando um documento no canvas',
       '',
       'Se abrir um .md relevante (uma regra, uma especificação, um checklist) e quiser',
@@ -251,7 +269,7 @@ export class PtyManager extends EventEmitter {
 
   /** Injeta só o protocolo numa CLI que já está rodando. */
   public injectProtocol(id: string): boolean {
-    return this.sendPrompt(id, this.protocolText(id))
+    return this.sendPrompt(id, `${this.protocolText(id)}\n\n---\n\n${AGUARDE_TAREFA}`)
   }
 
   /** Entrega um prompt a um agente já em execução. Usado pelo roteamento do pipeline. */
@@ -280,6 +298,11 @@ export class PtyManager extends EventEmitter {
     if (task) blocks.push(`## Sua tarefa\n\n${task}`)
     // Sempre vai, mesmo sem skill: sem ele o agente não participa do pipeline.
     blocks.push(this.protocolText(id))
+    // Papel entregue sem tarefa: sem esta ordem o agente improvisa — sai lendo
+    // os arquivos da pasta e inventando trabalho. Ele tem de saber quem é e
+    // esperar, para que o pedido digitado depois caia num agente que já tem
+    // o papel e o protocolo.
+    if (!task) blocks.push(AGUARDE_TAREFA)
     return blocks.join('\n\n---\n\n')
   }
 
@@ -357,7 +380,10 @@ export class PtyManager extends EventEmitter {
           this.notify(id, '▸ Não consegui preparar o contexto inicial; o agente sobe sem ele.')
         } else if (template.includes('{claudeSettings}') && !settingsFile) {
           // Passar --settings com caminho vazio faria a CLI recusar o argumento.
-          this.notify(id, '▸ Hook de status indisponível; o veredito volta a depender do agente.')
+          this.notify(
+            id,
+            '▸ Configuração da sessão indisponível: o agente vai pedir confirmação para gravar arquivos.'
+          )
           for (const raw of agent.skillArgs) {
             if (raw.includes('{claudeSettings}')) continue
             if (raw === '--settings') continue

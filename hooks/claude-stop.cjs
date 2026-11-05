@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 /**
+ * DESATIVADO: o app não registra mais este hook (ver writeClaudeSettings em
+ * src/main/core/claude-hooks.ts). O pipeline passou a ter turnos que terminam
+ * sem status de propósito — o agente esperando a tarefa, ou parado esperando a
+ * resposta de uma pessoa —, e este hook transformava os dois em aprovação.
+ * Fica no repositório como registro de por que a ideia foi abandonada.
+ *
  * Hook `Stop` do Claude Code: garante que o turno termine com um veredito no
  * pipeline do orquestrador.
  *

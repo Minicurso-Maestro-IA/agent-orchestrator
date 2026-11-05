@@ -29,7 +29,11 @@ precisa bastar sozinho.
    testes testam as bordas da especificação ou só o caminho feliz. Sem
    `package.json`, o comando é `node --test`.
 5. Confira as *Perguntas em aberto*: alguma foi respondida em silêncio dentro do
-   código? Isso é exatamente o que você precisa pegar.
+   código? Isso é exatamente o que você precisa pegar. Reprove a decisão
+   **escondida**, não a decisão **anunciada**: se o codificador escolheu um
+   caminho e disse qual no `reason`, aponte isso na sua aprovação em vez de
+   reprovar. Uma pergunta que só a pessoa pode responder não se resolve
+   girando o pipeline — reprovar por ela só cria um laço.
 
 ## Teste a regra, não o exemplo
 

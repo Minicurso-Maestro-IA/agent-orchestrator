@@ -89,11 +89,12 @@ export function NewTerminalModal(): ReactElement | null {
   const setSkill = useTerminalStore((s) => s.setSelectedSkill)
   const addTerminal = useTerminalStore((s) => s.addTerminal)
 
-  // Nasce desmarcado de propósito. A CLI sobe de qualquer jeito; o que esta
-  // caixa decide é se a skill vai junto. Com ela marcada nos três nós, os três
-  // começam a trabalhar ao mesmo tempo, que é o oposto de um pipeline.
-  // Fica lembrado entre aberturas do diálogo.
-  const [iniciarAgora, setIniciarAgora] = useState(false)
+  // Marcado por padrão: o papel e o protocolo vão junto quando a CLI sobe, e o
+  // agente fica esperando a tarefa (o prompt manda ele responder "Aguardando" e
+  // parar). É o comportamento da main, que é o que funciona: você digita o
+  // pedido direto no terminal 1 e o veredito dele anda pelas arestas.
+  // Desmarcado, o nó sobe sem papel e espera o botão Começar.
+  const [iniciarAgora, setIniciarAgora] = useState(true)
 
   const confirmRef = useRef<HTMLButtonElement>(null)
 
@@ -243,7 +244,7 @@ export function NewTerminalModal(): ReactElement | null {
                 onChange={(e) => setIniciarAgora(e.target.checked)}
                 className="accent-[#5B9BD5] w-3 h-3"
               />
-              Começar a trabalhar já
+              Entregar o papel agora
             </label>
           )}
 

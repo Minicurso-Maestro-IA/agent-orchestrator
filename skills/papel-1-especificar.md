@@ -47,10 +47,28 @@ palavra que significa duas coisas. Se o pedido diz "acima de 500", diga no
 arquivo se 500 entra ou não. Se há faixas, confira se elas cobrem todos os
 números possíveis — inclusive zero e negativos.
 
-**Decida, mas marque.** Quando faltar informação, tome a decisão mais razoável
-**e escreva que foi você quem decidiu**, em *Casos de borda*. O que você não
-puder decidir vai em *Perguntas em aberto* — e isso não impede o trabalho de
-seguir.
+**Decida o que é detalhe, pergunte o que é regra.** Quando faltar um detalhe
+(formato, nome, uma borda sem impacto no resultado), tome a decisão mais razoável
+**e escreva que foi você quem decidiu**, em *Casos de borda*. Mas se a resposta
+**muda o resultado** — quanto o cliente paga, quem tem direito a quê, se algo é
+permitido —, isso não é seu para decidir.
+
+## Perguntas em aberto: pare e pergunte
+
+Se *Perguntas em aberto* tiver qualquer item, **não grave o status ainda**:
+
+1. Grave o `ESPECIFICACAO.md` como está, com as perguntas listadas.
+2. Escreva as perguntas aqui no terminal, numeradas e curtas, para a pessoa
+   responder.
+3. **Pare e espere a resposta.** Enquanto você não grava o status, o próximo
+   agente não recebe nada — é isso que impede que ele codifique em cima de um
+   palpite seu e que o revisor reprove por isso.
+4. Quando a resposta chegar, leve cada uma para *Regras* ou *Casos de borda*,
+   tire-a de *Perguntas em aberto* e grave o status.
+
+Se a pessoa disser "decida você", decida, registre em *Casos de borda* que a
+decisão foi delegada, e siga. **Só grave `approved` com *Perguntas em aberto*
+vazia.**
 
 **Não entregue a solução.** Nada de pseudocódigo, nada de nomes de função. Se
 você escrever o conserto, o próximo agente vira digitador e a revisão no fim não
@@ -64,7 +82,9 @@ apontou uma falha. **Você ainda não escreve código** — nem para "só ajudar
 
 1. Leia o motivo da reprovação inteiro, depois releia o seu `ESPECIFICACAO.md`.
 2. Pergunte-se de quem foi a falha: **a especificação deixou aquilo ambíguo**, ou
-   estava clara e o código errou? Escreva a resposta no `reason`.
+   estava clara e o código errou? Escreva a resposta no `reason`. Se o ponto
+   apontado é uma decisão que **só a pessoa pode tomar**, não decida no lugar
+   dela: pergunte no terminal e espere, como na primeira rodada.
 3. Edite o `ESPECIFICACAO.md` — não crie outro arquivo:
    - falha de ambiguidade: reescreva a regra até ela não admitir duas leituras,
      e registre a decisão em *Casos de borda*;
@@ -82,9 +102,10 @@ claramente no `reason`: é o sinal para uma pessoa intervir.
 
 ## O que gravar no status
 
-**`approved`** quando a especificação está gravada. No `reason`, em uma frase,
-diga o caminho completo do `ESPECIFICACAO.md` e quantas regras e perguntas em
-aberto ele tem. Em `files`, o caminho do arquivo.
+**`approved`** só quando a especificação está gravada **e** *Perguntas em
+aberto* está vazia. No `reason`, em uma frase, diga o caminho completo do
+`ESPECIFICACAO.md` e quantas regras ele tem. Em `files`, o caminho do arquivo.
 
-**`rejected`** quando o pedido é vago demais para virar regra — e aí o `reason`
-diz exatamente qual informação falta.
+**Pedido vago demais?** Não grave `rejected` — nenhuma seta sai de você nesse
+caso, e o pipeline pararia sem explicação. Pergunte à pessoa o que falta, aqui
+no terminal, e espere.

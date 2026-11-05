@@ -53,8 +53,10 @@ caminho mais defensável, implemente, e diga no `reason` o que você decidiu e
 por quê. Uma decisão anunciada o revisor consegue julgar; uma escondida ele
 descobre tarde.
 
-Se houver *Perguntas em aberto* que te travam de verdade, grave `rejected`
-explicando qual delas e o que você tentou.
+Se algo te trava de verdade — uma regra que muda o resultado e não está
+escrita —, **pergunte no terminal e espere a resposta, sem gravar o status**.
+Não grave `rejected` por isso: não há seta saindo de você nesse caso, e o
+pipeline pararia sem que ninguém soubesse o porquê.
 
 ## Não faça
 
