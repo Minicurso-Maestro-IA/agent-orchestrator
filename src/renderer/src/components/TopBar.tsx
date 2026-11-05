@@ -1,7 +1,7 @@
 import { type ReactElement, useRef, useEffect, useState } from 'react'
 import { useReactFlow } from '@xyflow/react'
-import { Plus, Focus, PauseCircle, FilePlus, Group } from 'lucide-react'
-import { useTerminalStore } from '../store/terminalStore'
+import { Plus, Focus, PauseCircle, FilePlus, Group, Workflow } from 'lucide-react'
+import { useTerminalStore, MAX_HOPS } from '../store/terminalStore'
 
 function IFlowLogo({ className = 'w-4 h-4' }: { className?: string }): ReactElement {
   return (
@@ -65,6 +65,7 @@ export function TopBar(): ReactElement {
   const nodes = useTerminalStore((s) => s.nodes)
   const setNewTerminalOpen = useTerminalStore((s) => s.setNewTerminalOpen)
   const pipelineHalted = useTerminalStore((s) => s.pipelineHalted)
+  const pipelineHops = useTerminalStore((s) => s.pipelineHops)
   const resumePipeline = useTerminalStore((s) => s.resumePipeline)
   const createDocumentNode = useTerminalStore((s) => s.createDocumentNode)
   const createGroup = useTerminalStore((s) => s.createGroup)
@@ -79,7 +80,11 @@ export function TopBar(): ReactElement {
   const isWindows = typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent || navigator.platform)
   const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.userAgent || navigator.platform)
 
-  const activeCount = nodes.filter((n) => n.type === 'terminal' && n.data.active).length
+  const terminais = nodes.filter((n) => n.type === 'terminal' && n.data.active)
+  const activeCount = terminais.length
+  // O ponto só pulsa quando alguém está mesmo trabalhando: um indicador que
+  // pisca o tempo todo é um indicador que ninguém olha.
+  const trabalhando = terminais.filter((n) => n.data.activity === 'working').length
 
   // Fechar popover ao clicar fora
   useEffect(() => {
@@ -119,11 +124,20 @@ export function TopBar(): ReactElement {
         <div className="hidden sm:flex items-center gap-2 text-xs text-[#737B88] flex-shrink-0">
           <span
             className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-              activeCount > 0 ? 'bg-[#62B58A]' : 'bg-[#737B88]'
+              activeCount === 0
+                ? 'bg-[#737B88]'
+                : trabalhando > 0
+                  ? 'bg-[#D9A860] animate-pulse'
+                  : 'bg-[#62B58A]'
             }`}
           />
           <span className="text-[#737B88]">Terminais:</span>
           <span className="font-mono text-[#E6E8EC] font-medium">{activeCount}</span>
+          {trabalhando > 0 && (
+            <span className="text-[#D9A860] whitespace-nowrap">
+              · {trabalhando} trabalhando
+            </span>
+          )}
         </div>
       </div>
 
@@ -132,6 +146,19 @@ export function TopBar(): ReactElement {
         className="flex items-center gap-2 app-no-drag"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
+        {pipelineHops > 0 && !pipelineHalted && (
+          <div
+            title="Saltos do pipeline. No limite o app pausa sozinho."
+            className="hidden md:flex items-center gap-1.5 px-2.5 h-7 bg-[#171A20] border border-[#262B34] rounded text-xs text-[#A0A6B2]"
+          >
+            <Workflow className="w-3.5 h-3.5 flex-shrink-0 text-[#5B9BD5]" />
+            <span className="font-mono text-[#E6E8EC]">
+              {pipelineHops}
+              <span className="text-[#737B88]">/{MAX_HOPS}</span>
+            </span>
+          </div>
+        )}
+
         {pipelineHalted && (
           <div className="flex items-center gap-2 px-2.5 h-7 bg-[#242933] border border-[#D87979]/40 rounded text-xs text-[#D87979]">
             <PauseCircle className="w-3.5 h-3.5 flex-shrink-0" />

@@ -81,18 +81,38 @@ function createWindow(): void {
 
 app.setName('iFlow')
 
-app.whenReady().then(() => {
-  if (process.platform === 'win32') {
-    app.setAppUserModelId('com.minicurso.iflow')
-  }
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+/**
+ * Uma segunda instância é descartada, trazendo a primeira para a frente.
+ *
+ * Não é só polimento: as duas instâncias compartilham a mesma pasta de userData
+ * e, portanto, a mesma pasta de eventos e de status. Os dois observadores fazem
+ * polling do mesmo lugar e consomem o arquivo do outro — o veredito de um agente
+ * roteia no canvas errado, ou se perde. Um duplo clique no atalho basta para
+ * cair nisso.
+ */
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
     }
   })
-})
+
+  app.whenReady().then(() => {
+    if (process.platform === 'win32') {
+      app.setAppUserModelId('com.minicurso.iflow')
+    }
+    createWindow()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow()
+      }
+    })
+  })
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

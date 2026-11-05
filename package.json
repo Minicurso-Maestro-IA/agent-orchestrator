@@ -1,14 +1,15 @@
 {
   "name": "iflow",
   "version": "1.1.0",
-  "description": "Spatial 2D Canvas workspace running terminals and AI agents",
+  "description": "iFlow - orquestrador de agentes de IA",
   "main": "./out/main/index.js",
   "author": "Eliandro",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "tsc --noEmit -p tsconfig.json && electron-vite build",
     "preview": "electron-vite preview",
-    "dist": "electron-vite build && electron-builder --win"
+    "dist": "electron-vite build && electron-builder --win",
+    "dist:win": "npm run build && electron-builder --win --x64"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
@@ -49,17 +50,29 @@
       "agents.json",
       "skills/**",
       "resources/**",
-      "package.json"
+      "package.json",
+      "!node_modules/node-pty/build/**",
+      "!node_modules/node-pty/prebuilds/darwin-*/**"
     ],
-    "asar": false,
+    "asar": true,
     "npmRebuild": false,
     "win": {
       "icon": "resources/icon.ico",
       "target": [
-        "portable",
-        "dir"
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "artifactName": "${productName}-v${version}-win-${arch}-portable.${ext}"
+      "artifactName": "${productName}-v${version}-win-${arch}.${ext}"
     },
     "nsis": {
       "installerIcon": "resources/icon.ico",
@@ -76,6 +89,40 @@
         "Name": "iFlow",
         "Comment": "Spatial 2D Canvas workspace running terminals and AI agents"
       }
-    }
+    },
+    "asarUnpack": [
+      "**/node_modules/node-pty/**"
+    ],
+    "extraFiles": [
+      {
+        "from": "agents.json",
+        "to": "agents.json"
+      },
+      {
+        "from": "skills",
+        "to": "skills"
+      },
+      {
+        "from": "hooks",
+        "to": "hooks"
+      },
+      {
+        "from": "minicurso/instalar.mjs",
+        "to": "instalar.mjs"
+      },
+      {
+        "from": "minicurso/LEIA-ME-LABORATORIO.txt",
+        "to": "LEIA-ME.txt"
+      },
+      {
+        "from": "minicurso/projeto-exemplo",
+        "to": "projeto-exemplo",
+        "filter": [
+          "**/*",
+          "!**/node_modules/**",
+          "!**/dist/**"
+        ]
+      }
+    ]
   }
 }

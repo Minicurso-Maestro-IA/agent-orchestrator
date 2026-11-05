@@ -4,13 +4,18 @@ import { listSkills } from '../core/skill-registry'
 import { listAgents } from '../core/agent-registry'
 import { pipelineWatcher } from '../core/pipeline-watcher'
 import { documentWatcher, readDocument, writeDocument } from '../core/document-watcher'
+import { traceWatcher } from '../core/trace-watcher'
 import * as path from 'path'
 import {
   TerminalSpawnOptions,
+  TerminalInfo,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalActivityEvent,
   PipelineStatusEvent,
-  DocumentEvent
+  AgentSpawnEvent,
+  DocumentEvent,
+  TraceEvent
 } from '@shared/types'
 
 export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): void {
@@ -72,6 +77,20 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     }
   })
 
+  ptyManager.onActivity((event: TerminalActivityEvent) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('terminal:activity', event)
+    }
+  })
+
+  ptyManager.onInfo((info: TerminalInfo) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('terminal:info', info)
+    }
+  })
+
   ptyManager.onExit((event: TerminalExitEvent) => {
     const window = getMainWindow()
     if (window && !window.isDestroyed()) {
@@ -88,6 +107,14 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
   })
   pipelineWatcher.start()
 
+  // Quem cria o nó e desenha a ligação é o renderer, dono do canvas.
+  documentWatcher.on('spawn', (event: AgentSpawnEvent) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('agent:spawn', event)
+    }
+  })
+
   documentWatcher.on('document', (event: DocumentEvent) => {
     const window = getMainWindow()
     if (window && !window.isDestroyed()) {
@@ -95,4 +122,12 @@ export function registerTerminalIpc(getMainWindow: () => BrowserWindow | null): 
     }
   })
   documentWatcher.start()
+
+  traceWatcher.on('trace', (event: TraceEvent) => {
+    const window = getMainWindow()
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('terminal:trace', event)
+    }
+  })
+  traceWatcher.start()
 }

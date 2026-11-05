@@ -1,0 +1,75 @@
+ORQUESTRADOR DE AGENTES DE IA - INSTALACAO NO LABORATORIO
+==========================================================
+
+Por maquina, uma vez. Nao precisa de administrador.
+
+
+PASSO 1 - DESCOMPACTAR
+----------------------
+Descompacte este zip em uma pasta fixa, por exemplo:
+
+    C:\minicurso\orquestrador
+
+Nao rode de dentro do zip: alguns arquivos precisam ser gravaveis.
+
+
+PASSO 2 - INSTALAR
+------------------
+Abra o PowerShell NA PASTA onde voce descompactou e rode:
+
+    node instalar.mjs
+
+Ele cria a pasta de trabalho, copia o projeto de exemplo, configura as
+variaveis e cria o atalho na area de trabalho.
+
+Precisa de Node.js instalado. Se nao tiver:
+    winget install OpenJS.NodeJS.LTS
+
+
+PASSO 3 - A IA (OBRIGATORIO, E NAO DA PARA AUTOMATIZAR)
+-------------------------------------------------------
+Abra um terminal NOVO e rode:
+
+    irm https://antigravity.google/cli/install.ps1 | iex
+
+Feche e abra outro terminal novo, entao:
+
+    cd C:\minicurso\workspace
+    agy
+
+Responda o assistente de primeiro uso (tema, modo de render, confiar na
+pasta) e faca login com uma conta Google.
+
+ESTE PASSO E A CAUSA NUMERO UM DE "NAO FUNCIONOU". Enquanto esse pedido
+esta na tela, o agente nao le o prompt inicial, nao termina turno nenhum,
+e o orquestrador nao roteia nada - parecendo defeito do aplicativo.
+
+
+PASSO 4 - CONFERIR
+------------------
+Abra o atalho "Orquestrador" na area de trabalho.
+
+No primeiro clique o Windows avisa que o autor e desconhecido, porque o
+executavel nao e assinado:
+    Mais informacoes > Executar assim mesmo
+
+Entao:
+  a) crie um terminal SEM IA e digite  dir
+     -> tem que listar a pasta. Isso prova que o terminal nativo funciona.
+
+  b) crie um terminal COM a IA "Antigravity CLI (gratis)" e uma skill
+     -> a IA deve subir ja trabalhando, e a bolinha do cabecalho fica
+        ambar enquanto ela trabalha.
+
+Se (a) falhar, o problema e o pacote. Se (b) falhar, quase sempre e o
+passo 3 que faltou nessa maquina.
+
+
+OBSERVACOES
+-----------
+- A cota da IA gratuita e por conta Google. Em sala, uma conta por GRUPO
+  rende muito mais que uma por pessoa.
+- Os arquivos agents.json e a pasta skills ficam ao lado do executavel e
+  podem ser editados em qualquer editor de texto, sem recompilar nada.
+- Para apagar tudo: remova a pasta descompactada, a pasta C:\minicurso e
+  o atalho da area de trabalho.

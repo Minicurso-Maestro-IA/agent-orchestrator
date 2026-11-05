@@ -2,9 +2,12 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   OrchestratorAPI,
   TerminalSpawnOptions,
-  TerminalInfo,
   TerminalDataEvent,
   TerminalExitEvent,
+  TerminalActivityEvent,
+  TerminalInfo,
+  AgentSpawnEvent,
+  TraceEvent,
   SkillInfo,
   AgentDefinition,
   PipelineStatusEvent,
@@ -37,9 +40,7 @@ const orchestratorAPI: OrchestratorAPI = {
   sendPrompt: (id: string, text: string): Promise<boolean> => {
     return ipcRenderer.invoke('terminal:prompt', id, text)
   },
-  injectProtocol: (id: string): Promise<boolean> => {
-    return ipcRenderer.invoke('terminal:inject-protocol', id)
-  },
+  injectProtocol: (id: string) => ipcRenderer.invoke('terminal:inject-protocol', id),
   notifyTerminal: (id: string, text: string): Promise<void> => {
     return ipcRenderer.invoke('terminal:notify', id, text)
   },
@@ -67,6 +68,42 @@ const orchestratorAPI: OrchestratorAPI = {
       ipcRenderer.removeListener('terminal:exit', listener)
     }
   },
+  onTerminalActivity: (callback: (event: TerminalActivityEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: TerminalActivityEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('terminal:activity', listener)
+    return () => {
+      ipcRenderer.removeListener('terminal:activity', listener)
+    }
+  },
+  onTerminalInfo: (callback: (event: TerminalInfo) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: TerminalInfo): void => {
+      callback(data)
+    }
+    ipcRenderer.on('terminal:info', listener)
+    return () => {
+      ipcRenderer.removeListener('terminal:info', listener)
+    }
+  },
+  onTrace: (callback: (event: TraceEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: TraceEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('terminal:trace', listener)
+    return () => {
+      ipcRenderer.removeListener('terminal:trace', listener)
+    }
+  },
+  onAgentSpawn: (callback: (event: AgentSpawnEvent) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: AgentSpawnEvent): void => {
+      callback(data)
+    }
+    ipcRenderer.on('agent:spawn', listener)
+    return () => {
+      ipcRenderer.removeListener('agent:spawn', listener)
+    }
+  },
   onPipelineStatus: (callback: (event: PipelineStatusEvent) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, data: PipelineStatusEvent): void => {
       callback(data)
@@ -90,13 +127,10 @@ const orchestratorAPI: OrchestratorAPI = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('orchestrator', orchestratorAPI)
-    contextBridge.exposeInMainWorld('iflow', orchestratorAPI)
   } catch (error) {
     console.error('Failed to expose orchestrator API:', error)
   }
 } else {
   // @ts-ignore fallback
   window.orchestrator = orchestratorAPI
-  // @ts-ignore
-  window.iflow = orchestratorAPI
 }

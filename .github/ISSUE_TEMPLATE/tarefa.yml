@@ -1,0 +1,59 @@
+name: Tarefa do minicurso
+description: Um problema para ser resolvido com o agente de IA
+title: "[Tarefa] "
+labels: ["tarefa"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Quem escreve a tarefa **não é quem executa**. Outro grupo vai receber
+        este texto sem poder te perguntar nada — escreva pensando nisso.
+
+  - type: textarea
+    id: sintoma
+    attributes:
+      label: O sintoma
+      description: >
+        O que se VÊ de errado, e como reproduzir. Descreva, não diagnostique:
+        se você já concluiu a causa errada, leva o outro grupo junto.
+      placeholder: |
+        Na lista de transações, a data aparece como 2026-01-15 em vez de 15/01/2026.
+        Para ver: abra o site e olhe qualquer linha da lista.
+    validations:
+      required: true
+
+  - type: textarea
+    id: onde
+    attributes:
+      label: Onde olhar
+      description: >
+        Um ponto de partida — arquivo, tela ou rota. NÃO a solução. Se você já
+        entrega a linha do conserto, a tarefa vira digitação.
+      placeholder: "Começa pelo componente que desenha a lista de transações."
+    validations:
+      required: true
+
+  - type: textarea
+    id: pronto
+    attributes:
+      label: Pronto quando
+      description: >
+        A lista de checagem. Cada item precisa ser verificável por outra pessoa,
+        sem discussão. Inclua o comando que prova (npm run build, etc).
+      placeholder: |
+        - datas aparecem como dd/mm/aaaa
+        - nenhuma função de formatação nova foi criada
+        - `npm run build` passa
+    validations:
+      required: true
+
+  - type: textarea
+    id: pergunta
+    attributes:
+      label: A pergunta
+      description: >
+        Uma decisão ou explicação que a IA não dá por você, e que quem executar
+        precisa responder nos comentários deste card.
+      placeholder: "Por que criar uma segunda formatação no componente seria pior do que usar a que já existe?"
+    validations:
+      required: true

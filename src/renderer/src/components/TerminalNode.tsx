@@ -1,9 +1,21 @@
-import { useEffect, useRef, memo, type ReactElement } from 'react'
+import { useEffect, useRef, useState, memo, type ReactElement } from 'react'
 import { Handle, Position, NodeProps, Node, NodeResizeControl, NodeResizer } from '@xyflow/react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { X, Sparkles, BookOpen } from 'lucide-react'
-import { TerminalNodeData, TerminalDataEvent, TerminalExitEvent } from '@shared/types'
+import {
+  X,
+  Sparkles,
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  FilePen,
+  SquareTerminal,
+  Search,
+  Globe,
+  Wrench
+} from 'lucide-react'
+import { TerminalNodeData, TerminalDataEvent, TerminalExitEvent, TraceEvent } from '@shared/types'
 import { useTerminalStore } from '../store/terminalStore'
 
 /**
@@ -42,11 +54,45 @@ const HANDLE_SIDES = [
   { id: 'left', position: Position.Left }
 ] as const
 
+const TRACE_ICONS: Record<string, typeof Wrench> = {
+  Read: FileText,
+  Write: FilePen,
+  Edit: FilePen,
+  MultiEdit: FilePen,
+  NotebookEdit: FilePen,
+  Bash: SquareTerminal,
+  Glob: Search,
+  Grep: Search,
+  WebFetch: Globe,
+  WebSearch: Globe
+}
+
+/** Verbo em português para a ação, porque "Read" não diz nada para a turma. */
+const TRACE_VERBS: Record<string, string> = {
+  Read: 'leu',
+  Write: 'escreveu',
+  Edit: 'editou',
+  MultiEdit: 'editou',
+  NotebookEdit: 'editou',
+  Bash: 'rodou',
+  Glob: 'buscou',
+  Grep: 'procurou',
+  WebFetch: 'acessou',
+  WebSearch: 'pesquisou',
+  Task: 'delegou',
+  TodoWrite: 'planejou'
+}
+
 function TerminalNodeComponent({
   id,
   data,
   selected
 }: NodeProps<Node<TerminalNodeData>>): ReactElement {
+  const [traceAberto, setTraceAberto] = useState(false)
+  const trace = data.trace ?? []
+  const ultima = trace[0]
+  const trabalhando = data.active && data.activity === 'working'
+
   const terminalContainerRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -192,9 +238,15 @@ function TerminalNodeComponent({
         <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
           <span
             className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-              data.active ? 'bg-[#62B58A]' : 'bg-[#737B88]'
+              !data.active
+                ? 'bg-[#737B88]'
+                : trabalhando
+                  ? 'bg-[#D9A860] animate-pulse'
+                  : 'bg-[#62B58A]'
             }`}
-            title={data.active ? 'Sessão ativa' : 'Sessão encerrada'}
+            title={
+              !data.active ? 'Sessão encerrada' : trabalhando ? 'Trabalhando agora' : 'Ocioso'
+            }
           />
 
           <span className="text-xs font-medium text-[#E6E8EC] truncate max-w-[160px]">
@@ -245,12 +297,66 @@ function TerminalNodeComponent({
         </div>
       </div>
 
+      {/* O que o agente acabou de fazer: é isto que a turma acompanha de longe. */}
+      {ultima && (
+        <div className="nodrag flex-shrink-0 bg-[#14171D] border-b border-[#262B34] text-[13px]">
+          <button
+            onClick={() => setTraceAberto((v) => !v)}
+            className="w-full flex items-center gap-1.5 px-2.5 py-1 text-left hover:bg-[#1D2129] transition-colors cursor-pointer"
+            title={traceAberto ? 'Recolher as ações' : 'Ver as últimas ações'}
+          >
+            {traceAberto ? (
+              <ChevronDown className="w-3 h-3 text-[#737B88] flex-shrink-0" />
+            ) : (
+              <ChevronRight className="w-3 h-3 text-[#737B88] flex-shrink-0" />
+            )}
+            <TraceLinha evento={ultima} />
+            <span className="ml-auto text-[11px] text-[#737B88] font-mono flex-shrink-0">
+              {data.traceCount ?? trace.length} ações
+            </span>
+          </button>
+
+          {traceAberto && trace.length > 1 && (
+            <ul className="px-2.5 pb-2 pt-1 space-y-1 border-t border-[#262B34]">
+              {trace.slice(1).map((evento) => (
+                <li key={`${evento.at}-${evento.tool}-${evento.label}`} className="flex pl-4">
+                  <TraceLinha evento={evento} esmaecido />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* Área de execução do XTerm */}
       <div
         ref={terminalContainerRef}
         className="nodrag nowheel flex-1 w-full min-h-0 bg-[#0B0D11] p-2 overflow-hidden cursor-text"
       />
     </div>
+  )
+}
+
+/** "leu api.ts", "rodou npm test": o que o agente acabou de fazer, em uma linha. */
+function TraceLinha({
+  evento,
+  esmaecido
+}: {
+  evento: TraceEvent
+  esmaecido?: boolean
+}): ReactElement {
+  const Icone = TRACE_ICONS[evento.tool] ?? Wrench
+  const verbo = TRACE_VERBS[evento.tool] ?? evento.tool
+  return (
+    <span
+      className={`flex items-center gap-1.5 min-w-0 ${esmaecido ? 'text-slate-400' : 'text-slate-200'}`}
+    >
+      <Icone className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+      <span className="flex-shrink-0">{verbo}</span>
+      {evento.label && (
+        <code className="truncate font-mono text-[12px] text-sky-300">{evento.label}</code>
+      )}
+    </span>
   )
 }
 

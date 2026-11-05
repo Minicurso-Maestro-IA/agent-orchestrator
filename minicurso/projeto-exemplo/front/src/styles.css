@@ -1,0 +1,72 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  background: #0b1120;
+  color: #e2e8f0;
+}
+
+body {
+  margin: 0;
+}
+
+.pagina {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.subtitulo {
+  margin: 4px 0 24px;
+  color: #94a3b8;
+}
+
+.formulario {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.formulario input {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #111c33;
+  color: inherit;
+}
+
+.formulario button {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabela th,
+.tabela td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.tabela th {
+  color: #94a3b8;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

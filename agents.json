@@ -7,20 +7,33 @@
       "label": "Claude Code",
       "command": "claude",
       "args": [],
-      "delivery": "paste",
+      "delivery": "arg",
       "readyDelayMs": 4000,
       "description": "CLI agêntica da Anthropic",
-      "install": "npm i -g @anthropic-ai/claude-code"
+      "install": "npm i -g @anthropic-ai/claude-code",
+      "skillArgs": [
+        "--settings",
+        "{claudeSettings}",
+        "Leia e siga as instrucoes do arquivo {promptFile}"
+      ]
     },
     {
       "id": "antigravity",
-      "label": "Antigravity CLI",
+      "label": "Antigravity CLI (grátis)",
       "command": "agy",
-      "args": ["--mode", "auto", "--dangerously-skip-permissions"],
-      "delivery": "paste",
+      "args": [
+        "--mode",
+        "auto",
+        "--dangerously-skip-permissions"
+      ],
+      "delivery": "arg",
       "readyDelayMs": 4000,
-      "description": "CLI do Google Antigravity",
-      "install": "npm i -g agy"
+      "description": "CLI do Google que substituiu o acesso gratuito do Gemini CLI. Binario, nao precisa de Node. Sobe ja com o contexto via -i.",
+      "install": "irm https://antigravity.google/cli/install.ps1 | iex",
+      "skillArgs": [
+        "-i",
+        "Leia e siga as instrucoes do arquivo {promptFile}"
+      ]
     },
     {
       "id": "codex",
@@ -36,9 +49,14 @@
       "id": "exemplo-custom",
       "label": "Exemplo (custom)",
       "command": "echo",
-      "args": ["agente-custom-iniciado"],
+      "args": [
+        "agente-custom-iniciado"
+      ],
       "delivery": "arg",
-      "skillArgs": ["--contexto", "{skillFile}"],
+      "skillArgs": [
+        "--contexto",
+        "{skillFile}"
+      ],
       "description": "Modelo para plugar qualquer CLI own/local",
       "install": ""
     }

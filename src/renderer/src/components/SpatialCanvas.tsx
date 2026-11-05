@@ -29,6 +29,10 @@ export function SpatialCanvas(): ReactElement {
   const addTerminal = useTerminalStore((s) => s.addTerminal)
   const loadCatalog = useTerminalStore((s) => s.loadCatalog)
   const handlePipelineStatus = useTerminalStore((s) => s.handlePipelineStatus)
+  const setTerminalActivity = useTerminalStore((st) => st.setTerminalActivity)
+  const handleAgentSpawn = useTerminalStore((st) => st.handleAgentSpawn)
+  const handleTrace = useTerminalStore((st) => st.handleTrace)
+  const aplicarInfo = useTerminalStore((st) => st.applyTerminalInfo)
   const handleDocumentEvent = useTerminalStore((s) => s.handleDocumentEvent)
 
   const nodeTypes = useMemo(
@@ -62,6 +66,38 @@ export function SpatialCanvas(): ReactElement {
       handleDocumentEvent(event)
     })
   }, [handleDocumentEvent])
+
+  // O estado do nó vem do fluxo de bytes do PTY, não de leitura de tela.
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onTerminalActivity((event) => {
+      setTerminalActivity(event.id, event.activity)
+    })
+  }, [setTerminalActivity])
+
+  // Uma CLI reconhecida pelo que foi digitado muda o TerminalInfo depois de
+  // criado; sem ouvir isto, a tela continua achando que o nó é um shell pelado.
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onTerminalInfo((info) => {
+      aplicarInfo(info)
+    })
+  }, [aplicarInfo])
+
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onAgentSpawn((event) => {
+      handleAgentSpawn(event)
+    })
+  }, [handleAgentSpawn])
+
+  // Cada ferramenta que o agente usa vira uma linha no nó.
+  useEffect(() => {
+    if (!window.orchestrator) return
+    return window.orchestrator.onTrace((event) => {
+      handleTrace(event)
+    })
+  }, [handleTrace])
 
   // Atalhos de teclado: Ctrl + (zoom in) e Ctrl - (zoom out)
   useEffect(() => {

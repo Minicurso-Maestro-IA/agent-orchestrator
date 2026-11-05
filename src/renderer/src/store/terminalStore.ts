@@ -14,11 +14,14 @@ import {
 import {
   TerminalNodeData,
   TerminalShell,
+  TerminalInfo,
   SkillInfo,
   AgentDefinition,
   EdgeCondition,
-  PipelineStatus,
   PipelineStatusEvent,
+  TerminalActivity,
+  AgentSpawnEvent,
+  TraceEvent,
   DocumentNodeData,
   DocumentEvent,
   GroupNodeData
@@ -42,6 +45,12 @@ export interface SpawnContext {
   agentId?: string | null
   skillId?: string | null
   position?: { x: number; y: number }
+  /** Entregue junto do primeiro prompt, sem esperar a CLI subir. */
+  task?: string
+  /** Sobrescreve o título do nó. Usado quando um agente nomeia o que ele criou. */
+  title?: string
+  /** Id do terminal que pediu a criação, quando não foi o humano. */
+  spawnedBy?: string
 }
 
 export const CONDITION_COLORS: Record<EdgeCondition, string> = {
@@ -57,13 +66,24 @@ export const CONDITION_LABELS: Record<EdgeCondition, string> = {
 }
 
 /** Um ciclo reprovando → corrigindo → reprovando queima crédito de API sem parar. */
-const MAX_HOPS = 20
+export const MAX_HOPS = 20
+/**
+ * Teto de agentes criados por agentes. Um agente que se divide sem parar enche o
+ * canvas e esvazia a cota antes de alguém perceber. O limite é da sessão: o
+ * humano continua criando nós à mão sem restrição.
+ */
+const MAX_SPAWNS = 8
+/**
+ * Ações guardadas por nó. O suficiente para a turma ver a sequência do que a IA
+ * fez, sem manter na memória o histórico inteiro de um agente que roda uma hora.
+ */
+const MAX_TRACE = 8
 
 export function edgeVisuals(condition: EdgeCondition): Record<string, unknown> {
   const color = CONDITION_COLORS[condition]
   return {
-    style: { stroke: color, strokeWidth: 1.5 },
-    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color }
+    style: { stroke: color, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20, color }
   }
 }
 
@@ -90,10 +110,15 @@ interface TerminalState {
   setNewTerminalOpen: (open: boolean) => void
   pipelineHalted: boolean
   pipelineHops: number
+  agentSpawns: number
   resumePipeline: () => void
   cycleEdgeCondition: (edgeId: string) => void
   handlePipelineStatus: (event: PipelineStatusEvent) => Promise<void>
   injectProtocol: (terminalId: string) => Promise<void>
+  applyTerminalInfo: (info: TerminalInfo) => void
+  handleAgentSpawn: (event: AgentSpawnEvent) => Promise<void>
+  setTerminalActivity: (id: string, activity: TerminalActivity) => void
+  handleTrace: (event: TraceEvent) => void
   handleDocumentEvent: (event: DocumentEvent) => void
   createDocumentNode: (name: string) => Promise<void>
   createGroup: () => void
@@ -142,17 +167,40 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   newTerminalOpen: false,
   pipelineHalted: false,
   pipelineHops: 0,
+  agentSpawns: 0,
 
   setNewTerminalOpen: (open: boolean) => set({ newTerminalOpen: open }),
+  /**
+   * O processo principal avisou que o TerminalInfo mudou — hoje, que uma CLI
+   * foi reconhecida pelo que a pessoa digitou. Sem isto o nó segue sem agente
+   * na tela, o selo não aparece, e cada conexão nova injeta o protocolo de novo
+   * em quem já tem.
+   */
+  applyTerminalInfo: (info: TerminalInfo) => {
+    set((state) => ({
+      nodes: state.nodes.map((n) =>
+        isTerminal(n) && n.id === info.id
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                agentId: info.agentId,
+                agentLabel: info.agentLabel,
+                skillName: info.skillName
+              }
+            }
+          : n
+      )
+    }))
+  },
+
   injectProtocol: async (terminalId: string) => {
     const api = typeof window !== 'undefined' ? window.orchestrator : undefined
     if (!api) return
     const ok = await api.injectProtocol(terminalId)
-    if (ok) {
-      await api.notifyTerminal(terminalId, '▸ Protocolo de orquestração injetado no terminal com sucesso.')
-    }
+    if (ok) await api.notifyTerminal(terminalId, '▸ Protocolo de orquestração injetado no terminal.')
   },
-  resumePipeline: () => set({ pipelineHalted: false, pipelineHops: 0 }),
+  resumePipeline: () => set({ pipelineHalted: false, pipelineHops: 0, agentSpawns: 0 }),
   setSelectedShell: (shell: TerminalShell) => set({ selectedShell: shell }),
   setSelectedAgent: (id: string | null) => set({ selectedAgentId: id }),
   setSelectedSkill: (id: string | null) => set({ selectedSkillId: id }),
@@ -181,7 +229,6 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   onConnect: (connection: Connection) => {
     set({ edges: addEdge({ ...connection, ...EDGE_DEFAULTS }, get().edges) })
 
-    // Ligar um documento a um terminal injeta o conteúdo como contexto do agente.
     const { nodes } = get()
     const source = nodes.find((n) => n.id === connection.source)
     const target = nodes.find((n) => n.id === connection.target)
@@ -189,15 +236,16 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
 
     const api = typeof window !== 'undefined' ? window.orchestrator : undefined
 
+    // Terminal ligado a terminal: quem manda precisa do protocolo para o
+    // veredito dele ser detectável. Só injeta em quem ainda não tem agente —
+    // quem foi criado pelo modal já recebeu o protocolo no primeiro prompt.
     if (isTerminal(source) && isTerminal(target)) {
-      if (!source.data.agentLabel) {
-        api?.injectProtocol(source.id)
-      }
+      if (!source.data.agentLabel) api?.injectProtocol(source.id)
       return
     }
 
+    // Ligar um documento a um terminal injeta o conteúdo como contexto do agente.
     if (!isDocument(source) || !isTerminal(target)) return
-
     if (!api || !target.data.active) return
 
     const prompt = [
@@ -237,7 +285,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     const verdict = event.status === 'approved' ? 'APROVADO' : 'REPROVADO'
     await api?.notifyTerminal(
       event.terminalId,
-      `▸ ${verdict}${event.reason ? `: ${event.reason}` : ''}`
+      `▸ ${verdict}${event.auto ? ' (automático: o agente encerrou sem gravar o status)' : ''}` +
+        (event.reason ? `: ${event.reason}` : '')
     )
 
     if (pipelineHalted) {
@@ -479,7 +528,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
         terminalInfo = await window.orchestrator.spawnTerminal({
           shell,
           agentId: agentId || undefined,
-          skillId: skillId || undefined
+          skillId: skillId || undefined,
+          task: ctx.task
         })
       } else {
         const agent = state.agents.find((a) => a.id === agentId)
@@ -504,13 +554,17 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
         style: { width: NODE_WIDTH, height: NODE_HEIGHT },
         data: {
           id: terminalInfo.id,
-          title: terminalInfo.title,
+          title: ctx.title || terminalInfo.title,
           shell: terminalInfo.shell,
           active: true,
           pid: terminalInfo.pid,
           createdAt: terminalInfo.createdAt,
           agentLabel: terminalInfo.agentLabel,
-          skillName: terminalInfo.skillName
+          skillName: terminalInfo.skillName,
+          agentId: agentId || undefined,
+          skillId: skillId || undefined,
+          activity: 'idle',
+          spawnedBy: ctx.spawnedBy
         }
       }
 
@@ -519,6 +573,104 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     } catch (err) {
       console.error('[TerminalStore] Failed to spawn terminal:', err)
       return null
+    }
+  },
+
+  /** Uma ação do agente chegou: entra no topo da lista do nó. */
+  handleTrace: (event: TraceEvent) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) => {
+        if (!isTerminal(node) || node.id !== event.terminalId) return node
+        const anteriores = node.data.trace ?? []
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            trace: [event, ...anteriores].slice(0, MAX_TRACE),
+            traceCount: (node.data.traceCount ?? 0) + 1
+          }
+        } as TerminalFlowNode
+      })
+    }))
+  },
+
+  setTerminalActivity: (id: string, activity: TerminalActivity) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) =>
+        isTerminal(node) && node.id === id
+          ? ({
+              ...node,
+              data: {
+                ...node.data,
+                activity,
+                // O PTY morrer é a única fonte confiável de "sessão encerrada".
+                active: activity === 'stopped' ? false : node.data.active
+              }
+            } as TerminalFlowNode)
+          : node
+      )
+    }))
+  },
+
+  /**
+   * Um agente pediu outro agente. O nó nasce ao lado de quem pediu, ligado a ele,
+   * e a tarefa viaja junto do primeiro prompt — não há "esperar a CLI subir para
+   * então mandar o trabalho", que é onde esse tipo de integração costuma falhar.
+   */
+  handleAgentSpawn: async (event: AgentSpawnEvent) => {
+    const api = typeof window !== 'undefined' ? window.orchestrator : undefined
+    const { nodes, agents, agentSpawns } = get()
+
+    const source = event.from ? nodes.find((n) => n.id === event.from) : undefined
+    const parent = source && isTerminal(source) ? source : undefined
+
+    if (agentSpawns >= MAX_SPAWNS) {
+      if (parent) {
+        await api?.notifyTerminal(
+          parent.id,
+          `▸ Pedido de agente recusado: limite de ${MAX_SPAWNS} agentes criados por agentes nesta sessão.`
+        )
+      }
+      return
+    }
+
+    // Sem agente indicado, o filho herda a CLI do pai: quase sempre é o que se
+    // quer, e evita criar um shell pelado quando o agente esquece o campo.
+    const requested = event.agentId && agents.some((a) => a.id === event.agentId)
+      ? event.agentId
+      : parent?.data.agentId ?? get().selectedAgentId
+
+    const position = parent
+      ? { x: parent.position.x + NODE_WIDTH + 48, y: parent.position.y }
+      : nextPosition(nodes.length)
+
+    const id = await get().addTerminal({
+      shell: parent?.data.shell,
+      agentId: requested ?? null,
+      skillId: event.skillId ?? null,
+      position,
+      task: event.task,
+      title: event.name,
+      spawnedBy: parent?.id
+    })
+
+    if (!id) {
+      if (parent) await api?.notifyTerminal(parent.id, '▸ Falha ao criar o agente pedido.')
+      return
+    }
+
+    set((s) => ({
+      agentSpawns: s.agentSpawns + 1,
+      edges: parent
+        ? [...s.edges, { id: `e-${parent.id}-${id}`, source: parent.id, target: id, ...EDGE_DEFAULTS }]
+        : s.edges
+    }))
+
+    if (parent) {
+      await api?.notifyTerminal(
+        parent.id,
+        `▸ Agente "${event.name || id}" criado e ligado a você.`
+      )
     }
   },
 
