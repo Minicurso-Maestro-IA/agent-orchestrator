@@ -17,6 +17,7 @@ import {
 } from '@shared/types'
 import { listAgents, findAgent } from './agent-registry'
 import { findSkill, readSkillBody } from './skill-registry'
+import { minicursoDir, pastasDeCli } from './minicurso-paths'
 import type { SkillInfo } from '@shared/types'
 import { pipelineWatcher } from './pipeline-watcher'
 import { clearClaudeSettings, writeClaudeSettings } from './claude-hooks'
@@ -111,6 +112,7 @@ export class PtyManager extends EventEmitter {
     const cwd =
       options.cwd ||
       process.env.AGENT_ORCHESTRATOR_TERMINAL_CWD ||
+      minicursoDir('virta') ||
       process.env.USERPROFILE ||
       process.env.HOME ||
       process.cwd()
@@ -130,6 +132,15 @@ export class PtyManager extends EventEmitter {
       // Onde o hook de ferramenta grava o rastro que aparece no nó.
       ORCHESTRATOR_TRACE_FILE: traceWatcher.traceFileFor(id)
     } as Record<string, string>
+
+    // No Windows a chave costuma ser "Path"; depois do spread ela é só uma
+    // chave comum, então é preciso achá-la sem diferenciar maiúsculas.
+    const chavePath = Object.keys(env).find((k) => k.toLowerCase() === 'path') || 'PATH'
+    const atuais = (env[chavePath] || '').split(path.delimiter)
+    const faltando = pastasDeCli().filter(
+      (p) => !atuais.some((a) => a.toLowerCase() === p.toLowerCase())
+    )
+    if (faltando.length) env[chavePath] = [...atuais, ...faltando].filter(Boolean).join(path.delimiter)
 
     const ptyProcess = pty.spawn(file, args, {
       name: 'xterm-256color',

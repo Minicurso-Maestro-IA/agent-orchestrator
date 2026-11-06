@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
 import { SkillInfo } from '@shared/types'
+import { minicursoDir } from './minicurso-paths'
 
 /**
  * Skills são arquivos .md numa pasta `skills/` do projeto. Cada arquivo vira uma
@@ -17,6 +18,8 @@ import { SkillInfo } from '@shared/types'
 function candidateDirs(): string[] {
   const dirs = [
     process.env.AGENT_ORCHESTRATOR_SKILLS_DIR,
+    // Pacote do laboratório: C:\minicurso\skills, sem variável de ambiente.
+    minicursoDir('skills') ?? undefined,
     path.join(process.cwd(), 'skills'),
     // O .exe portátil se extrai numa pasta temporária; esta é a pasta onde ele de fato está.
     process.env.PORTABLE_EXECUTABLE_DIR && path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'skills'),

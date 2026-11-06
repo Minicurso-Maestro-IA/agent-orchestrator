@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
 import { DocumentEvent } from '@shared/types'
+import { minicursoDir } from './minicurso-paths'
 
 /**
  * Descobre documentos markdown de duas formas, porque nenhuma sozinha basta:
@@ -27,7 +28,7 @@ export class DocumentWatcher extends EventEmitter {
 
   constructor() {
     super()
-    this.rootDir = process.env.AGENT_ORCHESTRATOR_WATCH_DIR || process.cwd()
+    this.rootDir = process.env.AGENT_ORCHESTRATOR_WATCH_DIR || minicursoDir('virta') || process.cwd()
     this.eventsDir = path.join(app.getPath('userData'), 'pipeline-status', 'events')
     fs.mkdirSync(this.eventsDir, { recursive: true })
   }
